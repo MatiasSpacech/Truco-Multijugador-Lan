@@ -21,7 +21,7 @@
 | `join` | `{ nombre }` | Toma una silla libre; devuelve `playerToken` |
 | `rejoin` | `{ playerToken }` | Recupera silla tras desconexión |
 | `ready` | `{ listo: bool }` | Listo para empezar |
-| `action` | `{ stateSeq, accion: Accion, id }` | Acción de juego (ver §4) |
+| `action` | `{ stateSeq, accion }` + `id` en el envelope | Acción de juego (ver §4); el `id` da idempotencia |
 | `ping` | `{ ts }` | Latido cada 10 s (keep-alive + detección de red muerta) |
 | `leave` | `{}` | Abandona la partida/sala |
 
@@ -37,7 +37,10 @@
 | `pong` | `{ ts }` | Respuesta a `ping` |
 | `ended` | `{ motivo }` | Partida o sala cerrada (`HOST_LEFT`, `FIN`, `KICKED`) |
 
-### Vista privada de `state`
+### Vista privada de `state` (implementado)
+
+El contrato vigente es `protocol/src/main/kotlin/ar/truco/protocol/Mensajes.kt` (`StatePayload`).
+El estado es completo en cada cambio y **se arma por jugador** en el servidor.
 
 ```json
 {
@@ -45,29 +48,39 @@
   "fase": "JUEGO",
   "miJugadorId": 2,
   "asientos": [
-    { "id": 0, "nombre": "Ana", "equipo": 0, "conectado": true, "esMano": true, "cartasRestantes": 2 },
-    { "id": 1, "nombre": "Beto", "equipo": 1, "conectado": true, "esMano": false, "cartasRestantes": 3 }
+    { "id": 0, "nombre": "Ana", "equipo": 0, "conectado": true, "listo": true,
+      "esHost": true, "esMano": true, "cartasRestantes": 2 }
   ],
   "puntajes": [7, 5],
   "targetScore": 15,
   "manoIndex": 0,
+  "manoNumero": 3,
   "turno": 2,
   "valorMano": 2,
-  "miMano": [ { "palo": "ESPADA", "numero": 1 }, { "palo": "ORO", "numero": 7 }, { "palo": "COPA", "numero": 4 } ],
-  "bazas": [ { "jugadas": [ { "jugador": 0, "carta": {...} } ], "ganador": 0 } ],
-  "cantoPendiente": { "tipo": "TRUCO", "deJugador": 3, "respondedor": 2, "deadlineMs": 18000 },
-  "envido": { "cantado": ["ENVIDO"], "valorAcumulado": 4, "resuelto": false },
+  "miMano": [ { "palo": "ESPADA", "numero": 1 } ],
+  "manosReveladas": null,
+  "bazas": [ { "numero": 1, "jugadas": [ { "jugador": 0, "carta": { "palo": "ORO", "numero": 7 } } ],
+               "ganador": 0, "parda": false } ],
+  "cantoPendiente": { "canto": "TRUCO", "deJugador": 3, "respondedor": 2, "deadlineMs": 18000 },
+  "envido": { "declaraciones": [], "valorAcumulado": 0, "resuelto": true },
   "flor": null,
   "legalActions": ["JUGAR_CARTA", "CANTAR_TRUCO", "IRSE_AL_MAZO"],
-  "cartasJugables": [ { "palo": "ORO", "numero": 7 } ]
+  "cartasJugables": [ { "palo": "ESPADA", "numero": 1 } ],
+  "envidoValores": [33, 27],
+  "faltaEnvido": 8,
+  "manoGanadaPor": null,
+  "partidaGanadaPor": null
 }
 ```
 
-Reglas de privacidad (verificables en tests):
-- `miMano` solo contiene las cartas del jugador autenticado.
-- `cartasRestantes` es un número, nunca las cartas.
-- Al resolverse la mano (`MANO_CERRADA`) se revelan todas las cartas de esa mano (es público en la mesa).
+Reglas de privacidad (verificadas en `server/src/test/kotlin/ar/truco/server/SalaTest.kt`):
+- `miMano` solo contiene las cartas del jugador autenticado; `cartasRestantes` es un número.
+- `manosReveladas` es `null` durante la mano y solo aparece en `MANO_CERRADA` / `FIN_PARTIDA`.
 - `legalActions`/`cartasJugables` los calcula el motor → el cliente no duplica reglas.
+- Hay un test que compara el JSON emitido a A contra las cartas de B y falla si aparece una sola.
+
+Otros payloads del servidor: `welcome`, `lobby`, `state`, `events`, `error`, `pong`, `ended`
+(en `protocol/.../Mensajes.kt`). Los eventos traen `texto` ya redactado en español para el log de la mesa.
 
 ## 4. `Accion`
 
@@ -138,6 +151,28 @@ que ya tiene.
 ## 7. Compatibilidad y despliegue
 
 - El cliente se sirve desde el mismo servidor → ambos se actualizan juntos. Igual se valida
-  `protocolVersion` y se fuerza `location.reload()` en caso de mismatch (pestañas abiertas viejas).
-- `GET /api/info` devuelve `{ appVersion, protocolVersion, codigoSala, jugadores, fase }` para
-  diagnóstico rápido (y para que el lobby muestre datos sin abrir WS).
+  `protocolVersion` (en `hello` y en el `v` del envelope) y se fuerza `location.reload()` en caso de
+  mismatch (pestañas abiertas viejas).
+- `GET /api/info` devuelve `{ appVersion, protocolVersion, codigo, jugadores, maxJugadores, fase,
+  partidaEnCurso }` para diagnóstico rápido (y para que el lobby muestre datos sin abrir WS).
+
+## 8. Automatismos del servidor (Fase 2, ya implementados)
+
+Estos comportamientos no necesitan mensajes nuevos y evitan que la mesa se trabe:
+
+| situación | qué hace el servidor |
+|-----------|----------------------|
+| Canto sin respuesta (`rules.timeoutCantoMs`) | responde **no quiero** por el jugador |
+| Turno sin jugar (`rules.timeoutTurnoMs`) | juega la **carta más baja** por el jugador (o canta flor si está en la mano de flor) |
+| Mano cerrada (`pausaEntreManosMs`) | reparte la mano siguiente automáticamente; el mano rota |
+| Cierre de socket en partida | reserva la silla y marca `conectado:false`; `rejoin` recupera todo |
+| Cierre de socket en el lobby | libera la silla y reasigna ids |
+
+## 9. Estado de implementación
+
+- `:protocol` — todos los DTOs de este documento, `PROTOCOL_VERSION = 1`.
+- `:server` — módulo Ktor (`/api/info`, `/ws`, estáticos desde `assets/web` o `web/dist`),
+  `Sala` con sección crítica única, timeouts, reconexión, idempotencia por `id` de acción
+  (últimas 200), filtrado de cartas. 15 tests de integración con `testApplication` cubriendo
+  lobby, equipos de 4, envido, mano completa, privacidad, `STALE_STATE`, timeout, reconexión, errores.
+- Modo desarrollo: `./gradlew :server:run` (ver `Main.kt`, puerto 8080, `TRUCO_JUGADORES`).

@@ -23,17 +23,22 @@ Entregables: docs 00–05, README, `.gitignore`. Decisiones D-01, D-02, D-05 y D
 `envidoHastaSegundaCarta` (la ventana existe pero el valor se calcula con las 3 cartas originales,
 revisar cuando se use la variante).
 
-## Fase 2 — Protocolo y servidor (3–4 sesiones)
-`./gradlew :server:test`
+## Fase 2 — Protocolo y servidor ✅ (hecho)
+`./gradlew :server:test` → **15 tests verdes** (integración real por WebSocket).
 
-- `:protocol` con todos los DTOs del doc 04 + `protocolVersion`.
-- Ktor: `/api/info`, estáticos, `/ws`, `RoomManager`, actor por partida, timeouts con scheduler.
-- Filtrado de estado por jugador (test explícito: el JSON emitido a A no contiene cartas de B).
-- Tests con `testApplication`: join, ready, partida completa a 2 jugadores jugada por script,
-  timeout de canto, `STALE_STATE`, reconexión.
+- `:protocol`: envelope `{t, id, v, d}`, DTOs de entrada/salida, `PROTOCOL_VERSION = 1`, códigos de error.
+- `:server`: `Application.trucoModule(config)` con `/api/info`, `/ws` y estáticos (`assets/web` o `web/dist`).
+- `Sala`: lobby con tokens, equipos alternados, arranque cuando todos están listos, partida autoritativa,
+  broadcast de estado filtrado por jugador, eventos con texto en español, timeouts, reconexión.
+- Timeouts: canto → "no quiero"; turno → carta más baja; fin de mano → reparto automático.
+- Idempotencia por `id` de acción y validación de `stateSeq` (`STALE_STATE`).
+- `Main.kt` para correr el servidor en la PC (`./gradlew :server:run`, puerto 8080) y probar el cliente
+  web antes de empaquetar en Android.
+- Tests: lobby, privacidad de cartas (el JSON de A no contiene cartas de B), mano completa, envido,
+  4 jugadores en dos equipos, `STALE_STATE`, fuera de turno, timeout de canto, reconexión con token,
+  sala llena, versión de protocolo, token inválido, reparto automático de la mano siguiente.
 
-**Aceptado cuando:** una partida de 2 jugadores completa se juega por WS con clientes de test,
-sin UI, con reconexión en el medio.
+**Verificado a mano:** `installDist` + `curl /api/info` → `{"protocolVersion":1,...,"maxJugadores":4}`.
 
 ## Fase 3 — Cliente web + mesa del host (5–6 sesiones) ← *la más pesada*
 `web/`
@@ -104,8 +109,8 @@ TrucoArgentino/
 ├─ gradle/libs.versions.toml (version catalog)
 ├─ engine/                   Kotlin puro (JVM) — reglas ✅
 │  └─ src/{main,test}/kotlin/ar/truco/engine/
-├─ protocol/                 DTOs @Serializable          (Fase 2)
-├─ server/                   Ktor (JVM, usable desde Android) (Fase 2)
+├─ protocol/                 DTOs @Serializable ✅ (Fase 2)
+├─ server/                   Ktor: /api/info, /ws, estáticos ✅ (Fase 2)
 ├─ app/                      Android (Compose + Service + WebView) (Fase 4)
 │  └─ src/main/assets/web/   build del cliente (generado)
 ├─ web/                      TS + Vite                   (Fase 3)

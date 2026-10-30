@@ -37,10 +37,10 @@ dentro del teléfono; los demás jugadores se conectan **desde el navegador** de
 
 - [x] Fase 0 — Planificación y decisiones documentadas
 - [x] Fase 1 — Motor de reglas (Kotlin puro, 43 tests, 480 partidas aleatorias)
-- [ ] Fase 2 — Servidor y protocolo
+- [x] Fase 2 — Protocolo y servidor Ktor (15 tests de integración por WebSocket)
 - [ ] Fase 3 — Cliente web + app anfitriona
 - [ ] Fase 4 — Servicio en primer plano, QR, hotspot
-- [ ] Fase 5 — 4/6 jugadores, reconexión, timeouts, contraflor
+- [ ] Fase 5 — Reconexión fina, timeouts configurables, contraflor, malas y buenas
 - [ ] Fase 6 — Pulido (animaciones, sonido, accesibilidad)
 - [ ] Fase 7 — Release (APK firmada)
 
@@ -48,4 +48,10 @@ dentro del teléfono; los demás jugadores se conectan **desde el navegador** de
 
 ```bash
 ./gradlew :engine:test        # 43 tests del motor de reglas
+./gradlew :server:test        # 15 tests del protocolo y la sala por WebSocket
+./gradlew :server:run         # servidor en http://localhost:8080 (4 jugadores)
+curl http://localhost:8080/api/info
 ```
+
+El servidor ya acepta partidas completas por WebSocket (`ws://localhost:8080/ws`).
+Falta el cliente web (Fase 3) para jugarlo con cartas en pantalla.

@@ -31,20 +31,23 @@
 |--------|-----------------|------------|
 | `:engine` | Reglas, validación de acciones, puntajes. Sin Android, sin red, sin corrutinas | stdlib + kotlinx.serialization |
 | `:protocol` | DTOs del protocolo (`@Serializable`), versión, códigos de error | kotlinx.serialization |
-| `:server` | Ktor: estáticos, `/ws`, `RoomManager`, actor por partida, timeouts, reconexión | `:engine`, `:protocol` |
+| `:server` | Ktor: estáticos, `/ws`, `Sala` (lobby + partida), timeouts, reconexión | `:engine`, `:protocol` |
 | `:app` | Compose: lobby, config, QR, permisos, `ServerService`, WebView | `:server` |
 | `web/` (npm) | Cliente TypeScript/Vite: mesa, cartas, cantos, marcador | `:protocol` (tipos) |
 
 ## 3. Concurrencia y consistencia
 
-- **Un actor por partida**: `Channel<Comando>` + una única corrutina consumidora. Elimina carreras,
-  garantiza orden total de las acciones y hace trivial el log de eventos.
-- Cada acción lleva `actionId` (uuid v4 del cliente); el actor descarta duplicados por `actionId`
-  (reintentos por reconexión) — idempotencia.
+- **Sección crítica única por sala**: `Mutex` en `Sala`; toda mutación del estado del motor pasa por
+  ahí, así que el orden de las acciones es total y no hay carreras (el "actor" es lógico, sin un
+  canal aparte: mismo efecto, menos código).
+- **Nunca se envía dentro del lock**: cada sesión tiene su `Channel` de salida y un loop que escribe
+  el WebSocket. Si un cliente es lento, solo se llena *su* cola.
+- Cada acción lleva un `id` (uuid v4 del cliente) en el envelope; el servidor recuerda las últimas 200
+  y descarta duplicados (reintentos por reconexión) — idempotencia.
 - Toda mutación produce `(nuevoEstado, eventos)`; el servidor **emite el estado completo** filtrado
-  por jugador + la lista de eventos nuevos (ver doc 04). Payload chico (< 3 KB) → no hay deltas.
-- Timeouts y relojes: corrutina con `TestCoroutineScheduler` en tests; en producción un
-  `delay()` cancelable por partida que dispara `Responder(NO_QUIERO)` o `TurnoVencido`.
+  por jugador + los eventos nuevos. Payload chico (< 3 KB) → no hay deltas.
+- Timeouts con `delay()` cancelable por partida; en tests se usan timeouts de 250–300 ms reales y
+  `testApplication` (sin reloj virtual, para no pelear con la red).
 
 ## 4. Red: cómo se encuentran los dispositivos
 
