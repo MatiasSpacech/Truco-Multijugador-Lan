@@ -116,6 +116,7 @@ class ServicioServidor : Service() {
             rules = RulesConfig(
                 jugadores = jugadores,
                 targetScore = objetivo,
+                malasYBuenas = objetivo == 30,
                 flor = if (flor) FlorMode.FLOR else FlorMode.SIN_FLOR,
             ),
             codigo = "TRUCO",

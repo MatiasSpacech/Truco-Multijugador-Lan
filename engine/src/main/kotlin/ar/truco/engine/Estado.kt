@@ -2,6 +2,9 @@ package ar.truco.engine
 
 enum class Fase { ESPERANDO, FLOR, JUEGO, MANO_CERRADA, FIN_PARTIDA }
 
+/** A 30 se juegan malas (hasta 15) y buenas (otra vez 15, con marcador desde cero). */
+enum class Etapa { UNICA, MALAS, BUENAS }
+
 data class Asiento(
     val id: Int,
     val nombre: String,
@@ -21,7 +24,7 @@ data class Baza(
 
 data class Declaracion(val canto: Canto, val jugador: Int)
 
-enum class TipoNegociacion { ENVIDO, TRUCO }
+enum class TipoNegociacion { ENVIDO, TRUCO, FLOR }
 
 /** Canto pendiente de respuesta. Mientras exista, la mesa está congelada. */
 data class Negociacion(
@@ -39,9 +42,13 @@ data class Estado(
     val asientos: List<Asiento>,
     val seed: Long,
     val fase: Fase = Fase.ESPERANDO,
+    val etapa: Etapa = if (config.malasYBuenas) Etapa.MALAS else Etapa.UNICA,
     val manoNumero: Int = 0,
     val manoIndex: Int = 0,
     val puntajes: List<Int> = List(2) { 0 },
+    /** Marcador final de las malas (se muestra aunque en buenas se vuelva a cero). */
+    val puntajesMalas: List<Int> = emptyList(),
+    val malasGanadasPor: Int? = null,
     /** Manos actuales (van perdiendo cartas). */
     val manos: List<List<Carta>> = List(asientos.size) { emptyList() },
     /** Las 3 cartas repartidas a cada jugador: base del envido y la flor. */
@@ -64,6 +71,13 @@ data class Estado(
     fun equipoRival(equipo: Int): Int = (equipo + 1) % equipos
 
     val mano: Int get() = manoIndex
+
+    /** Puntos que hay que juntar en la etapa actual. */
+    val objetivoEtapa: Int
+        get() = when (etapa) {
+            Etapa.MALAS, Etapa.BUENAS -> 15
+            Etapa.UNICA -> config.targetScore
+        }
 
     fun tieneFlor(jugador: Int): Boolean = Envido.tieneFlor(manosRepartidas[jugador])
 
@@ -88,6 +102,8 @@ enum class TipoAccion {
     CANTAR_RETRUCO,
     CANTAR_VALE_CUATRO,
     CANTAR_FLOR,
+    CANTAR_CONTRAFLOR,
+    CANTAR_CONTRAFLOR_AL_RESTO,
     RESPONDER_QUIERO,
     RESPONDER_NO_QUIERO,
 }
@@ -111,6 +127,7 @@ sealed interface Evento {
         val valorMano: Int,
     ) : Evento
     data class FlorResuelta(val ganadorEquipo: Int, val puntos: Int, val valores: List<Int>) : Evento
+    data class FinDeMalas(val equipo: Int, val puntajes: List<Int>) : Evento
     data class ManoGanada(val equipo: Int, val puntos: Int, val manoNumero: Int) : Evento
     data class PartidaGanada(val equipo: Int) : Evento
     data class SeFueAlMazo(val jugador: Int, val equipoGanador: Int, val puntos: Int) : Evento

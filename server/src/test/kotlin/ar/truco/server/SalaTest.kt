@@ -399,6 +399,49 @@ class SalaTest {
     }
 
     @Test
+    fun `a treinta el estado muestra malas y buenas`() = testApp(
+        configPrueba.copy(rules = RulesConfig(jugadores = 2, targetScore = 30, malasYBuenas = true)),
+    ) { cliente ->
+        val ana = cliente.entrar("Ana")
+        val beto = cliente.entrar("Beto")
+        ana.listarse()
+        beto.listarse()
+
+        val vista = ana.sesion.vista(1)
+        assertEquals("MALAS", vista.etapa)
+        assertEquals(15, vista.objetivoEtapa)
+        assertEquals(30, vista.targetScore)
+        assertTrue(vista.puntajesMalas.isEmpty())
+        assertNull(vista.malasGanadasPor)
+    }
+
+    @Test
+    fun `si alguien se va se juega por el y queda marcado como ausente`() = testApp(
+        configPrueba.copy(
+            rules = RulesConfig(jugadores = 2, timeoutCantoMs = 400, timeoutTurnoMs = 400),
+            esperaAusenteMs = 120,
+        ),
+    ) { cliente ->
+        val ana = cliente.entrar("Ana")
+        val beto = cliente.entrar("Beto")
+        ana.listarse()
+        beto.listarse()
+
+        var vista = ana.sesion.vista(1)
+        beto.sesion.cancel(CancellationException("se fue la luz"))
+
+        // El servidor juega por Beto sin esperar el timeout largo, y lo marca ausente.
+        var intentos = 0
+        while (!vista.asientos[1].ausente && intentos < 30) {
+            vista = ana.sesion.vista(vista.seq + 1)
+            intentos++
+        }
+
+        assertTrue(vista.asientos[1].ausente, "Beto debería quedar marcado como ausente")
+        assertTrue(vista.seq > 2, "La mesa tuvo que avanzar sola")
+    }
+
+    @Test
     fun `despues de una mano el servidor reparte la siguiente`() = testApp { cliente ->
         val ana = cliente.entrar("Ana")
         val beto = cliente.entrar("Beto")

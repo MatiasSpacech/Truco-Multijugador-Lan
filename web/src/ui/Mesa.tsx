@@ -50,11 +50,16 @@ export function Mesa({ vista, cliente, eventos, reconectando }: Props) {
     <main className={`mesa fase-${vista.fase.toLowerCase()}`}>
       <header className="barra">
         <div className="tanteador">
-          <Puntos equipo={0} puntos={vista.puntajes[0]} objetivo={vista.targetScore} />
-          <Puntos equipo={1} puntos={vista.puntajes[1]} objetivo={vista.targetScore} />
+          <Puntos equipo={0} puntos={vista.puntajes[0]} objetivo={vista.objetivoEtapa ?? vista.targetScore} />
+          <Puntos equipo={1} puntos={vista.puntajes[1]} objetivo={vista.objetivoEtapa ?? vista.targetScore} />
         </div>
 
         <div className="mano-datos">
+          {vista.etapa && vista.etapa !== "UNICA" && (
+            <span className={`etapa etapa-${vista.etapa.toLowerCase()}`}>
+              {vista.etapa === "MALAS" ? "Malas" : "Buenas"}
+            </span>
+          )}
           <span>Mano {vista.manoNumero + 1}</span>
           <strong className={vista.valorMano > 1 ? "dorado" : ""}>Vale {vista.valorMano}</strong>
         </div>
@@ -224,7 +229,8 @@ function Rival({
 
       <div className="rival-datos">
         {envido !== undefined && <span className="chip">envido {envido}</span>}
-        {!asiento.conectado && <span className="chip chip-alerta">sin conexión</span>}
+        {asiento.ausente && <span className="chip chip-alerta">ausente</span>}
+        {!asiento.conectado && !asiento.ausente && <span className="chip chip-alerta">sin conexión</span>}
       </div>
     </div>
   );
@@ -264,6 +270,11 @@ function Final({ vista }: { vista: Vista }) {
           {vista.puntajes[0]} a {vista.puntajes[1]}
         </h2>
         <p className="detalle">La mesa vuelve al lobby en unos segundos para la revancha.</p>
+        {vista.puntajesMalas && vista.puntajesMalas.length === 2 && (
+          <p className="detalle">
+            Malas: {vista.puntajesMalas[0]} a {vista.puntajesMalas[1]}
+          </p>
+        )}
       </div>
     </div>
   );

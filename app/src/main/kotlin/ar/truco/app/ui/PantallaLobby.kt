@@ -96,6 +96,13 @@ fun PantallaLobby(
                     )
                 }
             }
+            if (config.objetivo == 30) {
+                Text(
+                    "A 30 se juega en dos etapas: malas y buenas, las dos a 15 y con el marcador desde cero.",
+                    fontSize = 12.sp,
+                    color = Colores.Crema.copy(alpha = 0.6f),
+                )
+            }
 
             Spacer(Modifier.height(18.dp))
 

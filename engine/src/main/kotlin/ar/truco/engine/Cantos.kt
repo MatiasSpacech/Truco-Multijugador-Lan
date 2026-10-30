@@ -1,10 +1,10 @@
 package ar.truco.engine
 
-/** Cantos posibles. Ver docs/01-REGLAS.md §5 y §6. */
+/** Cantos posibles. Ver docs/01-REGLAS.md §4, §5 y §6. */
 enum class Canto {
     ENVIDO, REAL_ENVIDO, FALTA_ENVIDO,
     TRUCO, RETRUCO, VALE_CUATRO,
-    FLOR,
+    FLOR, CONTRAFLOR, CONTRAFLOR_AL_RESTO,
 }
 
 /** Respuesta a un canto pendiente. */
@@ -17,6 +17,25 @@ object Cantos {
 
     fun esTruco(canto: Canto): Boolean =
         canto == Canto.TRUCO || canto == Canto.RETRUCO || canto == Canto.VALE_CUATRO
+
+    fun esFlor(canto: Canto): Boolean =
+        canto == Canto.FLOR || canto == Canto.CONTRAFLOR || canto == Canto.CONTRAFLOR_AL_RESTO
+
+    /** Puntos de la flor si se acepta el canto: flor 3, contraflor 6, al resto la falta. */
+    fun valorFlor(canto: Canto, falta: Int): Int = when (canto) {
+        Canto.FLOR -> 3
+        Canto.CONTRAFLOR -> 6
+        Canto.CONTRAFLOR_AL_RESTO -> falta
+        else -> error("No es un canto de flor: $canto")
+    }
+
+    /** Escalada de la flor: FLOR → CONTRAFLOR → CONTRAFLOR_AL_RESTO. */
+    fun puedeEscalarFlor(previas: List<Canto>, canto: Canto, config: RulesConfig): Boolean = when (canto) {
+        Canto.CONTRAFLOR -> config.contraflor && Canto.FLOR in previas && Canto.CONTRAFLOR !in previas
+        Canto.CONTRAFLOR_AL_RESTO ->
+            config.contraflorAlResto && Canto.CONTRAFLOR in previas && Canto.CONTRAFLOR_AL_RESTO !in previas
+        else -> false
+    }
 
     /** Valor de la mano si el canto es aceptado: truco 2, retruco 3, vale cuatro 4. */
     fun valorTruco(canto: Canto): Int = when (canto) {

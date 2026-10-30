@@ -132,6 +132,9 @@ data class ConfigDto(
     val trucoAntesDeEnvido: Boolean,
     val timeoutCantoMs: Long,
     val timeoutTurnoMs: Long,
+    val contraflor: Boolean = true,
+    val contraflorAlResto: Boolean = true,
+    val malasYBuenas: Boolean = false,
 )
 
 @Serializable
@@ -154,6 +157,7 @@ data class AsientoDto(
     val esHost: Boolean,
     val esMano: Boolean,
     val cartasRestantes: Int,
+    val ausente: Boolean = false,
 )
 
 @Serializable
@@ -209,6 +213,10 @@ data class StatePayload(
     val asientos: List<AsientoDto>,
     val puntajes: List<Int>,
     val targetScore: Int,
+    val etapa: String = "UNICA",
+    val objetivoEtapa: Int = 15,
+    val malasGanadasPor: Int? = null,
+    val puntajesMalas: List<Int> = emptyList(),
     val manoIndex: Int,
     val manoNumero: Int,
     val turno: Int,

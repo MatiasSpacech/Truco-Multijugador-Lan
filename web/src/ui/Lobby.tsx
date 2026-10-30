@@ -19,7 +19,8 @@ export function Lobby({ lobby, miId, onListo }: Props) {
         </p>
         <h2>Esperando jugadores</h2>
         <p className="resumen">
-          {lobby.config.jugadores} jugadores · a {lobby.config.targetScore} ·{" "}
+          {lobby.config.jugadores} jugadores · a {lobby.config.targetScore}
+          {lobby.config.malasYBuenas ? " (malas y buenas)" : ""} ·{" "}
           {lobby.config.flor === "FLOR" ? "con flor" : "sin flor"}
         </p>
         <p className="resumen">

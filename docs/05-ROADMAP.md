@@ -133,6 +133,24 @@ unirse y jugar.
 **Aceptado cuando:** 6 teléfonos juegan una partida a 30 con alguien que se desconecta y vuelve,
 sin corromper el estado.
 
+## Fase 5 — Reglas completas y abandono fino ✅ (hecho)
+`./gradlew :engine:test` → **53 tests**; `:server:test` → **18 tests**; E2E verde.
+
+- **Contraflor y contraflor al resto**: la flor ahora es una negociación como el envido
+  (`FLOR → CONTRAFLOR → CONTRAFLOR_AL_RESTO`), con la flor obligatoria (no se rechaza), empate al
+  equipo del mano y valores 3 / 6 / falta. Se puede apagar por configuración y el cliente muestra los
+  botones que manda `legalActions`.
+- **Malas y buenas a 30**: `malasYBuenas = true` (exige `targetScore = 30`). Al llegar a 15 en malas
+  se guarda `puntajesMalas`, se marca `malasGanadasPor`, **el marcador vuelve a cero** y se pasa a
+  buenas; la partida termina en buenas. La falta envido usa el objetivo de la etapa.
+  La mesa muestra la etapa (`MALAS` / `BUENAS`) y el tanteador sobre 15.
+- **Abandono fino**: al desconectarse alguien se reserva su silla y, si era su turno, se juega por él
+  a los `esperaAusenteMs` (1,5 s) en vez de esperar 45 s; a la segunda vez queda **ausente** (chip en
+  la mesa) y la partida sigue sola. `rejoin` limpia la marca y devuelve el control.
+- El servidor de desarrollo acepta `TRUCO_OBJETIVO=30` y `TRUCO_FLOR=true` para probar variantes.
+
+**Pendiente para Fase 6**: sonidos, animaciones de reparto, accesibilidad, i18n y el tutorial.
+
 ## Fase 6 — Pulido (3–4 sesiones)
 - Accesibilidad (tamaños táctiles ≥ 44 px, contraste, `prefers-reduced-motion`), i18n es/en.
 - Tutorial de 3 pasos y ayuda de reglas desde la mesa.

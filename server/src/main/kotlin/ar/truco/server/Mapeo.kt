@@ -41,6 +41,8 @@ fun nombreCanto(canto: Canto): String = when (canto) {
     Canto.RETRUCO -> "retruco"
     Canto.VALE_CUATRO -> "vale cuatro"
     Canto.FLOR -> "flor"
+    Canto.CONTRAFLOR -> "contraflor"
+    Canto.CONTRAFLOR_AL_RESTO -> "contraflor al resto"
 }
 
 // ------------------------------------------------------------------ config
@@ -55,6 +57,9 @@ fun aConfigDto(config: RulesConfig): ConfigDto = ConfigDto(
     trucoAntesDeEnvido = config.trucoAntesDeEnvido,
     timeoutCantoMs = config.timeoutCantoMs,
     timeoutTurnoMs = config.timeoutTurnoMs,
+    contraflor = config.contraflor,
+    contraflorAlResto = config.contraflorAlResto,
+    malasYBuenas = config.malasYBuenas,
 )
 
 // ------------------------------------------------------------------ asientos
@@ -66,6 +71,7 @@ fun aAsientos(
     manoIndex: Int,
     cartasRestantes: List<Int>,
     listos: List<Boolean>,
+    ausentes: List<Boolean> = emptyList(),
 ): List<AsientoDto> = nombres.indices.map { i ->
     AsientoDto(
         id = i,
@@ -76,6 +82,7 @@ fun aAsientos(
         esHost = i == 0,
         esMano = i == manoIndex,
         cartasRestantes = cartasRestantes.getOrElse(i) { 0 },
+        ausente = ausentes.getOrElse(i) { false },
     )
 }
 
@@ -100,6 +107,7 @@ fun aStatePayload(
     deadlineEnMs: Long?,
     conectados: List<Boolean>,
     listos: List<Boolean>,
+    ausentes: List<Boolean> = emptyList(),
 ): StatePayload {
     val legal = Motor.accionesLegales(estado, jugadorId)
     val miMano = estado.manos.getOrElse(jugadorId) { emptyList() }
@@ -118,9 +126,14 @@ fun aStatePayload(
             manoIndex = estado.manoIndex,
             cartasRestantes = estado.manos.map { it.size },
             listos = listos,
+            ausentes = ausentes,
         ),
         puntajes = estado.puntajes,
         targetScore = estado.config.targetScore,
+        etapa = estado.etapa.name,
+        objetivoEtapa = estado.objetivoEtapa,
+        malasGanadasPor = estado.malasGanadasPor,
+        puntajesMalas = estado.puntajesMalas,
         manoIndex = estado.manoIndex,
         manoNumero = estado.manoNumero,
         turno = estado.turno,
@@ -245,6 +258,13 @@ fun aEventoDto(evento: Evento, nombres: List<String>): EventoDto {
                 "(${evento.valores.joinToString(" / ")})",
             puntos = evento.puntos,
             equipo = evento.ganadorEquipo,
+        )
+
+        is Evento.FinDeMalas -> EventoDto(
+            tipo = "FIN_DE_MALAS",
+            texto = "El equipo ${evento.equipo + 1} ganó las malas " +
+                "(${evento.puntajes.joinToString("-")}). Ahora van las buenas, desde cero.",
+            equipo = evento.equipo,
         )
 
         is Evento.ManoGanada -> EventoDto(

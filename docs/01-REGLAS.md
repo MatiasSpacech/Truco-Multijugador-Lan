@@ -44,8 +44,14 @@ Representación: `Carta(palo: Palo, numero: Int)` con `numero ∈ {1,2,3,4,5,6,7
 - `flor = SIN_FLOR | FLOR` (default: `SIN_FLOR` para el MVP; `FLOR` habilita la mano de flor y
   deshabilita el envido en esa mano).
 - Con `FLOR`, el canto de flor es **obligatorio** al tenerla y se resuelve **antes** del envido.
-  Si ambas partes tienen flor, gana la más alta; el que pierde entrega **3** puntos.
-- **Pendiente (Fase 5)**: contraflor (6) y contraflor al resto.
+- Si **solo un equipo** tiene flor, ese equipo cobra **3** puntos sin comparar.
+- Si **los dos equipos** tienen flor, el primero canta **flor** y el rival con flor decide:
+  - **quiero** (equivale a contestar flor) → se comparan y el mayor cobra **3**;
+  - **contraflor** → el mayor cobra **6**;
+  - **contraflor al resto** → el mayor cobra lo que le falta al que va primero para ganar.
+- La flor **no se rechaza** (siempre hay comparación); empate → gana el equipo del mano.
+- En el motor es una negociación (`TipoNegociacion.FLOR`) con la escalera `FLOR → CONTRAFLOR →
+  CONTRAFLOR_AL_RESTO`; se pueden apagar por configuración (`contraflor`, `contraflorAlResto`).
 
 ## 5. Envido
 
@@ -119,9 +125,16 @@ Escalera: `TRUCO` → `RETRUCO` → `VALE_CUATRO`.
 
 ## 9. Puntaje de partido
 
-- `targetScore ∈ {15, 30}`. A 30 se juegan **malas** (a 15) y **buenas** (a 30) con marcador corrido.
-- Gana quien alcanza `targetScore`. Puntaje máximo por mano acotado por `targetScore`.
-- Empate exacto en `targetScore` al mismo tiempo no existe (los puntos se otorgan a un solo equipo).
+- `targetScore ∈ {15, 30}`.
+- **A 15**: una sola etapa, gana quien llega a 15 (`etapa = UNICA`).
+- **A 30**: se juega en dos etapas (`malasYBuenas = true`):
+  - **malas**: a 15 puntos; cuando un equipo llega, se guarda el marcador en `puntajesMalas`
+    y `malasGanadasPor`;
+  - **buenas**: **el marcador vuelve a cero** y se juega otra vez a 15;
+  - gana la partida quien gane las buenas (no se suman).
+- Los puntos de cada mano se topan en el objetivo de la etapa actual (`Estado.objetivoEtapa`).
+- Si una etapa se termina con un envido/truco/flor, la mano se cierra igual y se reparte la
+  siguiente ya en la nueva etapa.
 
 ## 10. Modelo de dominio (Kotlin, módulo `:engine`)
 
@@ -204,9 +217,12 @@ Implementados en `engine/src/test/kotlin/`: `CartasTest`, `EnvidoTest`, `CantosT
 5. ✅ `4,5,6 del mismo palo = 31`; `7,6,5 = 33`; `12,11,10 = 20`.
 6. ✅ Cadena de envido completa y todos los rechazos (tabla del §5).
 7. ✅ Falta envido con marcador 12-9 a 15 → 3 puntos y cierre de partida.
-8. ✅ Flor: se canta primero y paga 3. ⏳ Contraflor (Fase 5).
+8. ✅ Flor: se canta primero, compara y paga 3; **contraflor 6** y **contraflor al resto**; la flor
+   no se rechaza; con la contraflor apagada no se ofrece.
 9. ✅ Truco aceptado (2) + vale cuatro rechazado (3) → 3 al que cantó.
 10. ✅ Irse al mazo con truco aceptado: se cobra el valor vigente (2).
 11. ✅ Parda en segunda baza: la gana quien viene ganando.
 12. ✅ Rotación de mano entre manos.
 13. ✅ Partida completa aleatoria: terminan y nadie supera `targetScore`.
+14. ✅ A 30: al llegar a 15 en malas el marcador vuelve a cero, se pasa a buenas y no termina;
+   en buenas sí termina; la falta envido usa el objetivo de la etapa.

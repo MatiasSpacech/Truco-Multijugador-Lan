@@ -865,3 +865,19 @@ input:focus-visible {
     transition: none !important;
   }
 }
+
+/* ------------------------------------------------------------------ etapas (malas y buenas) */
+
+.etapa {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(217, 179, 106, 0.45);
+  color: var(--dorado);
+}
+
+.etapa-buenas {
+  background: rgba(217, 179, 106, 0.14);
+}

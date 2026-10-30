@@ -61,7 +61,7 @@ dentro del teléfono; los demás jugadores se conectan **desde el navegador** de
 - [x] Fase 2 — Protocolo y servidor Ktor (16 tests de integración por WebSocket)
 - [x] Fase 3 — Cliente web jugable + E2E en navegador real
 - [x] Fase 4 — App Android: servicio en primer plano, QR, hotspot, WebView
-- [ ] Fase 5 — Contraflor, malas y buenas, abandono fino
+- [x] Fase 5 — Contraflor, malas y buenas a 30, abandono fino
 - [ ] Fase 6 — Pulido (animaciones, sonido, accesibilidad)
 - [ ] Fase 7 — Release (APK firmada)
 
@@ -86,8 +86,8 @@ En la app: elegí jugadores y partido → **Crear mesa** → los demás escanean
 
 ```bash
 # Tests
-./gradlew :engine:test        # 43 tests del motor
-./gradlew :server:test        # 16 tests de protocolo y sala
+./gradlew :engine:test        # 53 tests del motor (incluye flor/contraflor y malas y buenas)
+./gradlew :server:test        # 18 tests de protocolo y sala (incluye abandono)
 cd e2e && npx playwright test # E2E real en Chromium (compila :server:installDist si falta)
 ```
 

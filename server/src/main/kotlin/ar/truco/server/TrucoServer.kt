@@ -30,6 +30,8 @@ data class ServerConfig(
     val assetsDir: File? = null,
     val pausaEntreManosMs: Long = 4_000,
     val pausaFinalMs: Long = 20_000,
+    /** Cuando alguien se desconecta, cuánto se espera antes de jugar por él. */
+    val esperaAusenteMs: Long = 1_500,
 )
 
 /**
@@ -43,6 +45,7 @@ fun crearSala(config: ServerConfig, scope: CoroutineScope): Sala = Sala(
     scope = scope,
     pausaEntreManosMs = config.pausaEntreManosMs,
     pausaFinalMs = config.pausaFinalMs,
+    esperaAusenteMs = config.esperaAusenteMs,
 )
 
 /**

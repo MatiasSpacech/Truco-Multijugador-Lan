@@ -55,6 +55,7 @@ class Sala(
     private val scope: CoroutineScope,
     private val pausaEntreManosMs: Long = 4_000,
     private val pausaFinalMs: Long = 20_000,
+    private val esperaAusenteMs: Long = 1_500,
     private val ahora: () -> Long = System::currentTimeMillis,
 ) {
     private class Jugador(val token: String, val nombre: String) {
@@ -71,6 +72,10 @@ class Sala(
     private var deadline: Long? = null
     private var timeoutJob: Job? = null
     private val accionesRecientes = ArrayDeque<String>()
+
+    /** Jugadores que se fueron: se juega por ellos para no trabar la mesa. */
+    private val ausentes = mutableSetOf<Int>()
+    private val autoAcciones = mutableMapOf<Int, Int>()
 
     // ------------------------------------------------------------ conexiones
 
@@ -92,9 +97,13 @@ class Sala(
             reasignarIds()
             enviarLobby()
         } else {
+            // Si era su turno, no esperamos los 45 s: se juega por él enseguida.
+            reprogramar()
             enviarEstados(emptyList())
         }
     }
+
+    private fun estaConectado(id: Int): Boolean = jugadores.getOrNull(id)?.sesion != null
 
     /** Sala cerrada (el anfitrión se fue o se detuvo el servidor). */
     suspend fun cerrar(motivo: String = "HOST_LEFT"): Unit = mutex.withLock {
@@ -193,6 +202,8 @@ class Sala(
         jugador.sesion = sesion
         sesion.token = jugador.token
         sesion.jugadorId = id
+        ausentes -= id
+        autoAcciones -= id
 
         sesion.enviarWelcome()
         if (estado == null) enviarLobby() else enviarEstadoA(id)
@@ -271,6 +282,8 @@ class Sala(
     // ------------------------------------------------------------ partida
 
     private fun iniciarPartida() {
+        ausentes.clear()
+        autoAcciones.clear()
         val nueva = Motor.nuevaPartida(config, jugadores.map { it.nombre }, Random.nextLong())
         val base = when (nueva) {
             is Ok -> nueva.valor
@@ -292,10 +305,15 @@ class Sala(
         deadline = null
 
         val actual = estado ?: return
+        val negociacion = actual.negociacion
+        val respondiendoAusente = negociacion != null && !estaConectado(negociacion.respondedor)
+        val turnoAusente = negociacion == null && !estaConectado(actual.turno)
+
         val ms = when {
             actual.fase == Fase.FIN_PARTIDA -> pausaFinalMs
-            actual.negociacion != null -> config.timeoutCantoMs
-            actual.fase == Fase.JUEGO || actual.fase == Fase.FLOR -> config.timeoutTurnoMs
+            negociacion != null -> if (respondiendoAusente) esperaAusenteMs else config.timeoutCantoMs
+            actual.fase == Fase.JUEGO || actual.fase == Fase.FLOR ->
+                if (turnoAusente) esperaAusenteMs else config.timeoutTurnoMs
             actual.fase == Fase.MANO_CERRADA -> pausaEntreManosMs
             else -> return
         }
@@ -339,11 +357,20 @@ class Sala(
 
         val resultado = Motor.aplicar(actual, forzada.first, forzada.second)
         if (resultado is Ok) {
+            registrarAutoAccion(forzada.first)
             estado = resultado.valor
             seq++
             reprogramar()
             enviarEstados(resultado.eventos)
         }
+    }
+
+    /** A la segunda vez que hay que jugar por alguien desconectado, queda marcado como ausente. */
+    private fun registrarAutoAccion(jugador: Int) {
+        if (estaConectado(jugador)) return
+        val veces = (autoAcciones[jugador] ?: 0) + 1
+        autoAcciones[jugador] = veces
+        if (veces >= 2) ausentes += jugador
     }
 
     // ------------------------------------------------------------ envío
@@ -356,6 +383,8 @@ class Sala(
         estado = null
         seq = 0
         accionesRecientes.clear()
+        ausentes.clear()
+        autoAcciones.clear()
         jugadores.forEach { it.listo = false }
         enviarLobby()
     }
@@ -373,6 +402,7 @@ class Sala(
             manoIndex = actual?.manoIndex ?: 0,
             cartasRestantes = actual?.manos?.map { it.size } ?: List(jugadores.size) { 0 },
             listos = jugadores.map { it.listo },
+            ausentes = jugadores.indices.map { it in ausentes },
         )
         val payload = LobbyPayload(
             codigo = codigo,
@@ -388,11 +418,12 @@ class Sala(
         val actual = estado ?: return
         val conectados = jugadores.map { it.sesion != null }
         val listos = jugadores.map { it.listo }
+        val marcados = jugadores.indices.map { it in ausentes }
         val restante = deadline?.let { (it - ahora()).coerceAtLeast(0) }
 
         jugadores.forEachIndexed { id, jugador ->
             val sesion = jugador.sesion ?: return@forEachIndexed
-            val vista = aStatePayload(actual, id, seq, restante, conectados, listos)
+            val vista = aStatePayload(actual, id, seq, restante, conectados, listos, marcados)
             sesion.enviar(Servidor.STATE, comoJson(vista))
         }
 
@@ -411,6 +442,7 @@ class Sala(
             actual, id, seq, restante,
             jugadores.map { it.sesion != null },
             jugadores.map { it.listo },
+            jugadores.indices.map { it in ausentes },
         )
         sesion.enviar(Servidor.STATE, comoJson(vista))
     }

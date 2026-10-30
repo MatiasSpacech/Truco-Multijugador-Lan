@@ -92,6 +92,8 @@ class PartidaAleatoriaTest {
             TipoAccion.CANTAR_RETRUCO -> Accion.Cantar(Canto.RETRUCO)
             TipoAccion.CANTAR_VALE_CUATRO -> Accion.Cantar(Canto.VALE_CUATRO)
             TipoAccion.CANTAR_FLOR -> Accion.Cantar(Canto.FLOR)
+            TipoAccion.CANTAR_CONTRAFLOR -> Accion.Cantar(Canto.CONTRAFLOR)
+            TipoAccion.CANTAR_CONTRAFLOR_AL_RESTO -> Accion.Cantar(Canto.CONTRAFLOR_AL_RESTO)
         }
 
     private fun verificarInvariantes(estado: Estado, config: RulesConfig) {

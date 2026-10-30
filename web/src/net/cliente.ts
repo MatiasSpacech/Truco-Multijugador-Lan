@@ -291,6 +291,8 @@ export const ETIQUETA_CANTO: Record<string, string> = {
   RETRUCO: "retruco",
   VALE_CUATRO: "vale cuatro",
   FLOR: "flor",
+  CONTRAFLOR: "contraflor",
+  CONTRAFLOR_AL_RESTO: "contraflor al resto",
 };
 
 export const ETIQUETA_ACCION: Record<string, string> = {
@@ -301,6 +303,8 @@ export const ETIQUETA_ACCION: Record<string, string> = {
   CANTAR_RETRUCO: "¡Retruco!",
   CANTAR_VALE_CUATRO: "¡Vale cuatro!",
   CANTAR_FLOR: "Flor",
+  CANTAR_CONTRAFLOR: "Contraflor",
+  CANTAR_CONTRAFLOR_AL_RESTO: "Contraflor al resto",
   IRSE_AL_MAZO: "Me voy al mazo",
   RESPONDER_QUIERO: "Quiero",
   RESPONDER_NO_QUIERO: "No quiero",

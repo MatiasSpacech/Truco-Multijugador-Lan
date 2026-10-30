@@ -1,5 +1,6 @@
 package ar.truco.server
 
+import ar.truco.engine.FlorMode
 import ar.truco.engine.RulesConfig
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.embeddedServer
@@ -20,14 +21,24 @@ import java.io.File
 fun main() {
     val puerto = System.getenv("TRUCO_PUERTO")?.toIntOrNull() ?: 8080
     val jugadores = System.getenv("TRUCO_JUGADORES")?.toIntOrNull() ?: 4
+    val objetivo = System.getenv("TRUCO_OBJETIVO")?.toIntOrNull() ?: 15
+    val conFlor = System.getenv("TRUCO_FLOR")?.toBoolean() ?: false
     val assets = buscarAssets()
 
     val config = ServerConfig(
-        rules = RulesConfig(jugadores = jugadores, targetScore = 15),
+        rules = RulesConfig(
+            jugadores = jugadores,
+            targetScore = objetivo,
+            flor = if (conFlor) FlorMode.FLOR else FlorMode.SIN_FLOR,
+            malasYBuenas = objetivo == 30,
+        ),
         assetsDir = assets,
     )
 
-    println("Truco Argentino — servidor en http://0.0.0.0:$puerto ($jugadores jugadores)")
+    println(
+        "Truco Argentino — servidor en http://0.0.0.0:$puerto " +
+            "($jugadores jugadores, a $objetivo" + (if (conFlor) ", con flor" else "") + ")",
+    )
     println(
         if (assets != null) "Cliente web: ${assets.absolutePath}"
         else "Cliente web: no encontrado (compilá con `cd web && npm run build`)",

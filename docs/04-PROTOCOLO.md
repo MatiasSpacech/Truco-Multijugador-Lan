@@ -49,10 +49,14 @@ El estado es completo en cada cambio y **se arma por jugador** en el servidor.
   "miJugadorId": 2,
   "asientos": [
     { "id": 0, "nombre": "Ana", "equipo": 0, "conectado": true, "listo": true,
-      "esHost": true, "esMano": true, "cartasRestantes": 2 }
+      "esHost": true, "esMano": true, "cartasRestantes": 2, "ausente": false }
   ],
   "puntajes": [7, 5],
   "targetScore": 15,
+  "etapa": "MALAS",
+  "objetivoEtapa": 15,
+  "malasGanadasPor": null,
+  "puntajesMalas": [],
   "manoIndex": 0,
   "manoNumero": 3,
   "turno": 2,
@@ -165,7 +169,10 @@ Estos comportamientos no necesitan mensajes nuevos y evitan que la mesa se trabe
 | Canto sin respuesta (`rules.timeoutCantoMs`) | responde **no quiero** por el jugador |
 | Turno sin jugar (`rules.timeoutTurnoMs`) | juega la **carta más baja** por el jugador (o canta flor si está en la mano de flor) |
 | Mano cerrada (`pausaEntreManosMs`) | reparte la mano siguiente automáticamente; el mano rota |
-| Cierre de socket en partida | reserva la silla y marca `conectado:false`; `rejoin` recupera todo |
+| Cierre de socket en partida | reserva la silla y marca `conectado:false`; si era su turno se juega
+  por él a los `esperaAusenteMs` |
+| Dos turnos jugados por un desconectado | queda `ausente:true` (la mesa sigue sola con el compañero) |
+| `rejoin` de un ausente | vuelve a jugar normalmente y se limpia la marca |
 | Cierre de socket en el lobby | libera la silla y reasigna ids |
 
 ## 9. Estado de implementación

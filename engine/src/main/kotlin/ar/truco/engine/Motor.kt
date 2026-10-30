@@ -216,7 +216,7 @@ object Motor {
         if (!estado.config.trucoAntesDeEnvido && envidoDisponible(estado)) {
             return Ilegal("Primero se canta el envido")
         }
-        return abrirNegociacion(estado, TipoNegociacion.TRUCO, jugador, canto)
+        return abrirNegociacion(estado, TipoNegociacion.TRUCO, jugador, canto, siguienteRival(estado, jugador))
     }
 
     private fun cantarEnvido(estado: Estado, jugador: Int, canto: Canto): Resultado<Estado> {
@@ -225,7 +225,7 @@ object Motor {
         if (!Cantos.puedeEscalarEnvido(emptyList(), canto, estado.config)) {
             return Ilegal("Ese canto no está habilitado")
         }
-        return abrirNegociacion(estado, TipoNegociacion.ENVIDO, jugador, canto)
+        return abrirNegociacion(estado, TipoNegociacion.ENVIDO, jugador, canto, siguienteRival(estado, jugador))
     }
 
     private fun abrirNegociacion(
@@ -233,11 +233,12 @@ object Motor {
         tipo: TipoNegociacion,
         jugador: Int,
         canto: Canto,
+        respondedor: Int,
     ): Resultado<Estado> {
         val neg = Negociacion(
             tipo = tipo,
             declaraciones = listOf(Declaracion(canto, jugador)),
-            respondedor = siguienteRival(estado, jugador),
+            respondedor = respondedor,
         )
         val evento = Evento.CantoHecho(jugador, canto)
         val nuevo = estado.copy(negociacion = neg, eventos = estado.eventos + evento)
@@ -252,14 +253,24 @@ object Motor {
                 if (!Cantos.puedeEscalarEnvido(previas, canto, estado.config)) {
                     return Ilegal("No se puede escalar a $canto")
                 }
-                agregarDeclaracion(estado, neg, jugador, canto)
+                agregarDeclaracion(estado, neg, jugador, canto, siguienteRival(estado, jugador))
             }
 
             TipoNegociacion.TRUCO -> {
                 if (Cantos.siguienteTruco(neg.canto) != canto) {
                     return Ilegal("No se puede escalar a $canto")
                 }
-                agregarDeclaracion(estado, neg, jugador, canto)
+                agregarDeclaracion(estado, neg, jugador, canto, siguienteRival(estado, jugador))
+            }
+
+            TipoNegociacion.FLOR -> {
+                val previas = neg.declaraciones.map { it.canto }
+                if (!Cantos.puedeEscalarFlor(previas, canto, estado.config)) {
+                    return Ilegal("No se puede escalar a $canto")
+                }
+                val respondedor = siguienteRivalConFlor(estado, jugador)
+                    ?: return Ilegal("No hay rival con flor")
+                agregarDeclaracion(estado, neg, jugador, canto, respondedor)
             }
         }
     }
@@ -269,10 +280,11 @@ object Motor {
         neg: Negociacion,
         jugador: Int,
         canto: Canto,
+        respondedor: Int,
     ): Resultado<Estado> {
         val nueva = neg.copy(
             declaraciones = neg.declaraciones + Declaracion(canto, jugador),
-            respondedor = siguienteRival(estado, jugador),
+            respondedor = respondedor,
         )
         val evento = Evento.CantoHecho(jugador, canto)
         val nuevo = estado.copy(negociacion = nueva, eventos = estado.eventos + evento)
@@ -285,12 +297,17 @@ object Motor {
         neg: Negociacion,
         respuesta: Respuesta,
     ): Resultado<Estado> {
+        if (neg.tipo == TipoNegociacion.FLOR && respuesta == Respuesta.NO_QUIERO) {
+            return Ilegal("La flor no se rechaza: se puede querer, contraflor o contraflor al resto")
+        }
+
         val evento = Evento.RespuestaDada(jugador, respuesta == Respuesta.QUIERO)
         val base = estado.copy(eventos = estado.eventos + evento)
         val nuevos = listOf(evento)
         return when (neg.tipo) {
             TipoNegociacion.ENVIDO -> resolverEnvido(base, neg, respuesta == Respuesta.QUIERO, nuevos)
             TipoNegociacion.TRUCO -> resolverTruco(base, neg, respuesta == Respuesta.QUIERO, nuevos)
+            TipoNegociacion.FLOR -> resolverFlor(base, neg, nuevos)
         }
     }
 
@@ -312,9 +329,7 @@ object Motor {
                 envidoCerrado = true,
                 eventos = estado.eventos + evento,
             )
-            val (conPuntos, termina) = otorgarPuntos(conjunto, equipoDeclarante, puntos)
-            val (final, todos) = conFinDePartida(conPuntos, termina, equipoDeclarante, previos + evento)
-            return Ok(final, todos)
+            return otorgarYContinuar(estado, conjunto, equipoDeclarante, puntos, previos + evento, Fase.JUEGO)
         }
 
         val valores = estado.manosRepartidas.map { Envido.valor(it) }
@@ -335,9 +350,7 @@ object Motor {
             envidoValores = valores,
             eventos = estado.eventos + evento,
         )
-        val (conPuntos, termina) = otorgarPuntos(conjunto, ganadorEquipo, puntos)
-        val (final, todos) = conFinDePartida(conPuntos, termina, ganadorEquipo, previos + evento)
-        return Ok(final, todos)
+        return otorgarYContinuar(estado, conjunto, ganadorEquipo, puntos, previos + evento, Fase.JUEGO)
     }
 
     private fun resolverTruco(
@@ -372,46 +385,61 @@ object Motor {
         if (estado.fase != Fase.FLOR) return Ilegal("No es el momento de la flor")
         if (jugador != estado.turno) return Ilegal("No es tu turno")
         if (!estado.tieneFlor(jugador)) return Ilegal("No tenés flor")
-        if (estado.florDeclaraciones.any { it.jugador == jugador }) return Ilegal("Ya declaraste la flor")
 
-        val declaraciones = estado.florDeclaraciones + Declaracion(Canto.FLOR, jugador)
         val evento = Evento.CantoHecho(jugador, Canto.FLOR)
-        val n = estado.asientos.size
-        val siguiente = (1..n)
-            .map { (jugador + it) % n }
-            .firstOrNull { j -> estado.tieneFlor(j) && declaraciones.none { it.jugador == j } }
+        val base = estado.copy(
+            eventos = estado.eventos + evento,
+            florDeclaraciones = listOf(Declaracion(Canto.FLOR, jugador)),
+        )
 
-        if (siguiente != null) {
-            val nuevo = estado.copy(
-                florDeclaraciones = declaraciones,
-                turno = siguiente,
-                eventos = estado.eventos + evento,
-            )
-            return Ok(nuevo, listOf(evento))
-        }
-        return resolverFlor(estado.copy(florDeclaraciones = declaraciones), listOf(evento))
+        val rival = siguienteRivalConFlor(estado, jugador)
+            ?: return resolverFlorDirecta(base, estado.equipoDe(jugador), listOf(evento))
+
+        val negociacion = Negociacion(
+            tipo = TipoNegociacion.FLOR,
+            declaraciones = listOf(Declaracion(Canto.FLOR, jugador)),
+            respondedor = rival,
+        )
+        return Ok(base.copy(negociacion = negociacion), listOf(evento))
     }
 
-    private fun resolverFlor(estado: Estado, previos: List<Evento>): Resultado<Estado> {
-        val valores = estado.florDeclaraciones.map { it.jugador to Envido.valorFlor(estado.manosRepartidas[it.jugador]) }
-        val maximo = valores.maxOf { it.second }
-        val n = estado.asientos.size
-        val ordenMano = (0 until n).map { (estado.manoIndex + it) % n }
-        val candidatos = valores.filter { it.second == maximo }.map { it.first }
-        val ganadorJugador = candidatos.minBy { ordenMano.indexOf(it) }
-        val equipo = estado.equipoDe(ganadorJugador)
-
-        val puntos = 3
-        val evento = Evento.FlorResuelta(equipo, puntos, valores.map { it.second })
+    /** Solo un equipo tiene flor: se cobra directo, sin comparar. */
+    private fun resolverFlorDirecta(estado: Estado, equipo: Int, previos: List<Evento>): Resultado<Estado> {
+        val valores = estado.manosRepartidas.map { if (Envido.tieneFlor(it)) Envido.valorFlor(it) else 0 }
+        val evento = Evento.FlorResuelta(equipo, 3, valores)
         val conjunto = estado.copy(
             fase = Fase.JUEGO,
             turno = estado.manoIndex,
             envidoCerrado = true,
+            negociacion = null,
             eventos = estado.eventos + evento,
         )
-        val (conPuntos, termina) = otorgarPuntos(conjunto, equipo, puntos)
-        val (final, todos) = conFinDePartida(conPuntos, termina, equipo, previos + evento)
-        return Ok(final, todos)
+        return otorgarYContinuar(estado, conjunto, equipo, 3, previos + evento, Fase.JUEGO)
+    }
+
+    private fun resolverFlor(estado: Estado, neg: Negociacion, previos: List<Evento>): Resultado<Estado> {
+        val falta = faltaEnvido(estado)
+        val puntos = Cantos.valorFlor(neg.canto, falta)
+        val valores = estado.manosRepartidas.map { if (Envido.tieneFlor(it)) Envido.valorFlor(it) else 0 }
+        val porEquipo = (0 until estado.equipos).map { eq ->
+            estado.asientos.indices.filter { estado.equipoDe(it) == eq }.maxOf { valores[it] }
+        }
+        val ganadorEquipo = when {
+            porEquipo[0] > porEquipo[1] -> 0
+            porEquipo[1] > porEquipo[0] -> 1
+            else -> estado.equipoDe(estado.manoIndex)
+        }
+
+        val evento = Evento.FlorResuelta(ganadorEquipo, puntos, valores)
+        val conjunto = estado.copy(
+            fase = Fase.JUEGO,
+            turno = estado.manoIndex,
+            envidoCerrado = true,
+            negociacion = null,
+            florDeclaraciones = neg.declaraciones,
+            eventos = estado.eventos + evento,
+        )
+        return otorgarYContinuar(estado, conjunto, ganadorEquipo, puntos, previos + evento, Fase.JUEGO)
     }
 
     // ---------------------------------------------------------------- mazo / cierre
@@ -431,41 +459,63 @@ object Motor {
         puntos: Int,
         previos: List<Evento>,
     ): Resultado<Estado> {
-        val (conPuntos, termina) = otorgarPuntos(estado, equipoGanador, puntos)
         val evento = Evento.ManoGanada(equipoGanador, puntos, estado.manoNumero)
-        val nuevo = conPuntos.copy(
-            fase = if (termina) Fase.FIN_PARTIDA else Fase.MANO_CERRADA,
-            manoGanadaPor = equipoGanador,
-            negociacion = null,
-            eventos = conPuntos.eventos + evento,
-        )
-        val (final, todos) = conFinDePartida(nuevo, termina, equipoGanador, previos + evento)
-        return Ok(final, todos)
+        val base = estado.copy(manoGanadaPor = equipoGanador)
+        return otorgarYContinuar(estado, base, equipoGanador, puntos, previos + evento, Fase.MANO_CERRADA)
     }
 
-    private fun otorgarPuntos(estado: Estado, equipo: Int, puntos: Int): Pair<Estado, Boolean> {
-        val objetivo = estado.config.targetScore
+    /**
+     * Suma los puntos y decide qué pasa con la etapa: si se terminaron las malas vuelve el
+     * marcador a cero y se pasa a buenas; si se terminó la partida, `FIN_PARTIDA`.
+     */
+    private fun otorgarYContinuar(
+        anterior: Estado,
+        estado: Estado,
+        equipo: Int,
+        puntos: Int,
+        eventos: List<Evento>,
+        faseSiSigue: Fase,
+    ): Resultado<Estado> {
+        val objetivo = estado.objetivoEtapa
         val puntajes = estado.puntajes.mapIndexed { i, p ->
             if (i == equipo) (p + puntos).coerceAtMost(objetivo) else p
         }
-        val termina = puntajes[equipo] >= objetivo
-        return estado.copy(puntajes = puntajes) to termina
-    }
+        val alcanzo = puntajes[equipo] >= objetivo
 
-    private fun conFinDePartida(
-        estado: Estado,
-        termina: Boolean,
-        equipoGanador: Int,
-        todos: List<Evento>,
-    ): Pair<Estado, List<Evento>> {
-        if (!termina) return estado to todos
-        val evento = Evento.PartidaGanada(equipoGanador)
-        val final = estado.copy(
-            fase = Fase.FIN_PARTIDA,
-            negociacion = null,
-            eventos = estado.eventos + evento,
-        )
-        return final to (todos + evento)
+        var nuevo = estado.copy(puntajes = puntajes)
+        var todos = eventos
+
+        if (!alcanzo) {
+            val conFase = if (faseSiSigue == Fase.JUEGO) nuevo else nuevo.copy(fase = faseSiSigue)
+            return Ok(conFase.copy(eventos = conFase.eventos + eventos), todos)
+        }
+
+        when (anterior.etapa) {
+            Etapa.UNICA, Etapa.BUENAS -> {
+                val evento = Evento.PartidaGanada(equipo)
+                nuevo = nuevo.copy(
+                    fase = Fase.FIN_PARTIDA,
+                    negociacion = null,
+                    eventos = nuevo.eventos + evento,
+                )
+                todos = eventos + evento
+            }
+
+            Etapa.MALAS -> {
+                val evento = Evento.FinDeMalas(equipo, puntajes)
+                nuevo = nuevo.copy(
+                    fase = Fase.MANO_CERRADA,
+                    etapa = Etapa.BUENAS,
+                    puntajes = List(estado.equipos) { 0 },
+                    puntajesMalas = puntajes,
+                    malasGanadasPor = equipo,
+                    negociacion = null,
+                    eventos = nuevo.eventos + evento,
+                )
+                todos = eventos + evento
+            }
+        }
+        return Ok(nuevo, todos)
     }
 
     // ---------------------------------------------------------------- consultas
@@ -478,12 +528,21 @@ object Motor {
     }
 
     fun faltaEnvido(estado: Estado): Int =
-        (estado.config.targetScore - estado.puntajes.max()).coerceAtLeast(1)
+        (estado.objetivoEtapa - estado.puntajes.max()).coerceAtLeast(1)
 
     fun siguienteRival(estado: Estado, desde: Int): Int {
         val n = estado.asientos.size
         val equipo = estado.equipoDe(desde)
         return (1..n).map { (desde + it) % n }.first { estado.equipoDe(it) != equipo }
+    }
+
+    /** Rival con flor más cercano en el orden de asientos (para contraflor). */
+    fun siguienteRivalConFlor(estado: Estado, desde: Int): Int? {
+        val n = estado.asientos.size
+        val equipo = estado.equipoDe(desde)
+        return (1..n)
+            .map { (desde + it) % n }
+            .firstOrNull { estado.equipoDe(it) != equipo && estado.tieneFlor(it) }
     }
 
     fun accionesLegales(estado: Estado, jugador: Int): Set<TipoAccion> {
@@ -511,6 +570,15 @@ object Motor {
                         Canto.RETRUCO -> add(TipoAccion.CANTAR_RETRUCO)
                         Canto.VALE_CUATRO -> add(TipoAccion.CANTAR_VALE_CUATRO)
                         else -> Unit
+                    }
+                }
+
+                TipoNegociacion.FLOR -> {
+                    val previas = neg.declaraciones.map { it.canto }
+                    buildSet {
+                        add(TipoAccion.RESPONDER_QUIERO)
+                        if (Cantos.puedeEscalarFlor(previas, Canto.CONTRAFLOR, estado.config)) add(TipoAccion.CANTAR_CONTRAFLOR)
+                        if (Cantos.puedeEscalarFlor(previas, Canto.CONTRAFLOR_AL_RESTO, estado.config)) add(TipoAccion.CANTAR_CONTRAFLOR_AL_RESTO)
                     }
                 }
             }

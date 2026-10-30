@@ -28,6 +28,9 @@ export interface Config {
   trucoAntesDeEnvido: boolean;
   timeoutCantoMs: number;
   timeoutTurnoMs: number;
+  contraflor?: boolean;
+  contraflorAlResto?: boolean;
+  malasYBuenas?: boolean;
 }
 
 export interface Asiento {
@@ -39,6 +42,7 @@ export interface Asiento {
   esHost: boolean;
   esMano: boolean;
   cartasRestantes: number;
+  ausente?: boolean;
 }
 
 export interface Jugada {
@@ -78,6 +82,10 @@ export interface Vista {
   asientos: Asiento[];
   puntajes: number[];
   targetScore: number;
+  etapa?: "UNICA" | "MALAS" | "BUENAS";
+  objetivoEtapa?: number;
+  malasGanadasPor?: number | null;
+  puntajesMalas?: number[];
   manoIndex: number;
   manoNumero: number;
   turno: number;
