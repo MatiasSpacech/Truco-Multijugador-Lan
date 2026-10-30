@@ -1,0 +1,121 @@
+# 05 — Roadmap, testing y estructura del repo
+
+Estimaciones en **sesiones de trabajo de medio día**. No son deadlines.
+
+## Fase 0 — Planificación ✅
+Entregables: docs 00–05, README, `.gitignore`. Decisiones D-01, D-02, D-05 y D-08 resueltas.
+
+## Fase 1 — Motor de reglas ✅ (hecho)
+`./gradlew :engine:test` → **43 tests verdes**.
+
+- Jerarquía de cartas, valores de envido, mazo de 40 y reparto determinista por semilla.
+- 2/4/6 jugadores con equipos alternados (D-05) y turnos rotativos.
+- Bazas, pardas ("la gana quien viene ganando; si no, el mano"), cierre de mano, rotación de mano.
+- Truco / retruco / vale cuatro, aceptados y rechazados, escalada dentro de la negociación.
+- Envido completo: cadena, escaladas, tabla exacta de "no quiero", falta envido, empate por configuración.
+- Flor (canto obligatorio, 3 puntos) con el envido deshabilitado en esa mano.
+- Irse al mazo con el valor vigente.
+- `accionesLegales` por jugador: el cliente nunca calcula reglas.
+- `PartidaAleatoriaTest`: 480 partidas completas al azar sobre 8 configuraciones, con invariantes
+  (cartas conservadas, puntajes dentro del objetivo, toda partida termina).
+
+**Pendiente anotado:** contraflor / contraflor al resto (Fase 5), malas y buenas a 30 (Fase 5),
+`envidoHastaSegundaCarta` (la ventana existe pero el valor se calcula con las 3 cartas originales,
+revisar cuando se use la variante).
+
+## Fase 2 — Protocolo y servidor (3–4 sesiones)
+`./gradlew :server:test`
+
+- `:protocol` con todos los DTOs del doc 04 + `protocolVersion`.
+- Ktor: `/api/info`, estáticos, `/ws`, `RoomManager`, actor por partida, timeouts con scheduler.
+- Filtrado de estado por jugador (test explícito: el JSON emitido a A no contiene cartas de B).
+- Tests con `testApplication`: join, ready, partida completa a 2 jugadores jugada por script,
+  timeout de canto, `STALE_STATE`, reconexión.
+
+**Aceptado cuando:** una partida de 2 jugadores completa se juega por WS con clientes de test,
+sin UI, con reconexión en el medio.
+
+## Fase 3 — Cliente web + mesa del host (5–6 sesiones) ← *la más pesada*
+`web/`
+
+- Vite + TS + React: store, cliente WS con reconexión exponencial, `localStorage` de token.
+- Pantallas: unirse (nombre), lobby, mesa, fin de partida.
+- Mesa mobile-first: barra superior (puntajes, valor de mano, mano), cartas del jugador con
+  abanico y drag/tap, cartas jugadas por baza, indicador de turno, panel de cantos con solo las
+  acciones legales, log de eventos.
+- Animaciones CSS (reparto, carta jugada, canto) y sonidos opcionales.
+- Empaquetado en `assets/web` vía tarea Gradle; WebView del host apuntando a `127.0.0.1` (D-02).
+
+**Aceptado cuando:** 4 personas en 4 teléfonos reales juegan una mano completa sin instrucciones y
+sin bugs bloqueantes; el layout no rompe en 360×640 ni en pantallas con notch.
+
+## Fase 4 — App Android anfitriona (3–4 sesiones)
+- Lobby Compose: nombre, cantidad de jugadores, `RulesConfig`, botón "Crear partida".
+- `ServerService` en primer plano + `WifiLock`/`WakeLock` + notificación con contador.
+- QR (zxing) con la URL y, si aplica, SSID/password del hotspot.
+- Detección de IP local; aviso si no hay Wi-Fi; manejo de puerto ocupado.
+- Spike R2: `startLocalOnlyHotspot` en 2–3 dispositivos; documentar resultado y fallbacks.
+- Pantalla de error si Play/oem bloquea el servicio; guía "cómo desactivar aislamiento".
+
+**Aceptado cuando:** con la pantalla apagada 10 minutos, el servidor sigue vivo y un invitado puede
+unirse y jugar.
+
+## Fase 5 — Multijugador completo (4–5 sesiones)
+- 4 y 6 jugadores (D-05), equipos, envido/flor con equipos.
+- Reconexión, abandono, "ausente", regla de compañero solo.
+- Partido a 15 y 30 (malas/buenas), revancha sin rearmar la sala.
+- Ajustes de partida visibles en el lobby y en `/api/info`.
+
+**Aceptado cuando:** 6 teléfonos juegan una partida a 30 con alguien que se desconecta y vuelve,
+sin corromper el estado.
+
+## Fase 6 — Pulido (3–4 sesiones)
+- Accesibilidad (tamaños táctiles ≥ 44 px, contraste, `prefers-reduced-motion`), i18n es/en.
+- Tutorial de 3 pasos y ayuda de reglas desde la mesa.
+- Sonidos, vibración, tema claro/oscuro.
+- Log de diagnóstico exportable (texto) para depurar redes raras.
+
+## Fase 7 — Release (2 sesiones)
+- Firma, `assembleRelease`, R8 con reglas para Ktor/kotlinx.serialization.
+- APK/AAB, README de instalación, changelog.
+- Si D-08 = Play: ficha, política de privacidad ("no se recolectan datos"), declaración de
+  `specialUse`, beta cerrada con 12 testers.
+
+## Estrategia de testing
+
+| Nivel | Herramienta | Qué cubre |
+|-------|-------------|-----------|
+| Motor | JUnit5 + kotest property | Reglas, casos de mesa, invariantes en 5.000 partidas |
+| Servidor | Ktor `testApplication` + `TestCoroutineScheduler` | Protocolo, filtrado de información, timeouts |
+| Cliente | Vitest | Reducer/store, parseo de estados, reconexión |
+| E2E | Playwright (2/4/6 contextos headless) | Flujo real: unirse, jugar mano, cantar, perder conexión |
+| Manual | 2–3 teléfonos + router + hotspot | Lo que ningún test automático ve |
+
+Regla: el **filtrado de información** (nadie ve cartas ajenas) es un test, no una revisión de código.
+
+## Estructura del repo (objetivo)
+
+```
+TrucoArgentino/
+├─ README.md
+├─ docs/                     00–05
+├─ build.gradle.kts          (raíz)
+├─ settings.gradle.kts
+├─ gradle/libs.versions.toml (version catalog)
+├─ engine/                   Kotlin puro (JVM) — reglas ✅
+│  └─ src/{main,test}/kotlin/ar/truco/engine/
+├─ protocol/                 DTOs @Serializable          (Fase 2)
+├─ server/                   Ktor (JVM, usable desde Android) (Fase 2)
+├─ app/                      Android (Compose + Service + WebView) (Fase 4)
+│  └─ src/main/assets/web/   build del cliente (generado)
+├─ web/                      TS + Vite                   (Fase 3)
+│  ├─ src/{net,store,ui,rules-types}
+│  └─ package.json
+└─ e2e/                      Playwright                  (Fase 3)
+```
+
+## Orden sugerido si querés ver algo en pantalla rápido
+
+Si la parte de Android (Fase 4) intimida, se puede invertir el orden: Fase 1 → 2 → **3 con el
+servidor corriendo en la PC** (`./gradlew :server:run`) → 4. Así se prueba el juego completo con
+teléfonos conectados al Wi-Fi de la PC antes de tocar Kotlin/Android.
