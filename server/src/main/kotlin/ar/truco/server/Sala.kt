@@ -54,6 +54,7 @@ class Sala(
     private val serverVersion: String,
     private val scope: CoroutineScope,
     private val pausaEntreManosMs: Long = 4_000,
+    private val pausaFinalMs: Long = 20_000,
     private val ahora: () -> Long = System::currentTimeMillis,
 ) {
     private class Jugador(val token: String, val nombre: String) {
@@ -232,8 +233,8 @@ class Sala(
                 if (accionId != null) recordar(accionId)
                 estado = resultado.valor
                 seq++
-                enviarEstados(resultado.eventos)
                 reprogramar()
+                enviarEstados(resultado.eventos)
             }
 
             is Ilegal -> {
@@ -292,7 +293,7 @@ class Sala(
 
         val actual = estado ?: return
         val ms = when {
-            actual.fase == Fase.FIN_PARTIDA -> return
+            actual.fase == Fase.FIN_PARTIDA -> pausaFinalMs
             actual.negociacion != null -> config.timeoutCantoMs
             actual.fase == Fase.JUEGO || actual.fase == Fase.FLOR -> config.timeoutTurnoMs
             actual.fase == Fase.MANO_CERRADA -> pausaEntreManosMs
@@ -310,13 +311,18 @@ class Sala(
     private fun vencerTimeout() {
         val actual = estado ?: return
 
+        if (actual.fase == Fase.FIN_PARTIDA) {
+            reiniciarSala()
+            return
+        }
+
         if (actual.fase == Fase.MANO_CERRADA) {
             val repartida = Motor.repartir(actual)
             if (repartida is Ok) {
                 estado = repartida.valor
                 seq++
-                enviarEstados(repartida.eventos)
                 reprogramar()
+                enviarEstados(repartida.eventos)
             }
             return
         }
@@ -335,12 +341,24 @@ class Sala(
         if (resultado is Ok) {
             estado = resultado.valor
             seq++
-            enviarEstados(resultado.eventos)
             reprogramar()
+            enviarEstados(resultado.eventos)
         }
     }
 
     // ------------------------------------------------------------ envío
+
+    /** Revancha sin rearmar la sala: vuelve al lobby con todos sin marcar listo. */
+    private fun reiniciarSala() {
+        timeoutJob?.cancel()
+        timeoutJob = null
+        deadline = null
+        estado = null
+        seq = 0
+        accionesRecientes.clear()
+        jugadores.forEach { it.listo = false }
+        enviarLobby()
+    }
 
     private fun broadcast(texto: String) {
         sesiones.forEach { it.enviar(texto) }

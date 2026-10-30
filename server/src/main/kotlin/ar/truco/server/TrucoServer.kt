@@ -25,9 +25,10 @@ import java.io.File
 data class ServerConfig(
     val rules: RulesConfig = RulesConfig(),
     val codigo: String = "TRUCO",
-    val serverVersion: String = "0.2.0",
+    val serverVersion: String = "0.3.0",
     val assetsDir: File? = null,
     val pausaEntreManosMs: Long = 4_000,
+    val pausaFinalMs: Long = 20_000,
 )
 
 /**
@@ -44,6 +45,7 @@ fun Application.trucoModule(config: ServerConfig = ServerConfig()): Sala {
         serverVersion = config.serverVersion,
         scope = scope,
         pausaEntreManosMs = config.pausaEntreManosMs,
+        pausaFinalMs = config.pausaFinalMs,
     )
 
     install(io.ktor.server.websocket.WebSockets)

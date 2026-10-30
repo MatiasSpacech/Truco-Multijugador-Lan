@@ -33,25 +33,56 @@ dentro del teléfono; los demás jugadores se conectan **desde el navegador** de
 | D-05 | 6 jugadores = **2 equipos de 3** (compañeros alternados 0-2-4 vs 1-3-5) | ✅ confirmado |
 | D-08 | Distribución por **APK directa** (sin Play Store) | ✅ confirmado |
 
+## Capturas
+
+<table>
+<tr>
+<td><img src="docs/capturas/2-mesa.png" width="260" alt="Mesa de juego en el teléfono"><br><sub>La mesa</sub></td>
+<td><img src="docs/capturas/4-canto.png" width="260" alt="Canto de truco con Quiero / No quiero"><br><sub>Un canto de truco</sub></td>
+</tr>
+</table>
+
 ## Estado
 
 - [x] Fase 0 — Planificación y decisiones documentadas
 - [x] Fase 1 — Motor de reglas (Kotlin puro, 43 tests, 480 partidas aleatorias)
-- [x] Fase 2 — Protocolo y servidor Ktor (15 tests de integración por WebSocket)
-- [ ] Fase 3 — Cliente web + app anfitriona
-- [ ] Fase 4 — Servicio en primer plano, QR, hotspot
-- [ ] Fase 5 — Reconexión fina, timeouts configurables, contraflor, malas y buenas
+- [x] Fase 2 — Protocolo y servidor Ktor (16 tests de integración por WebSocket)
+- [x] Fase 3 — Cliente web jugable + E2E en navegador real
+- [ ] Fase 4 — App Android: servicio en primer plano, QR, hotspot
+- [ ] Fase 5 — Contraflor, malas y buenas, abandono fino
 - [ ] Fase 6 — Pulido (animaciones, sonido, accesibilidad)
 - [ ] Fase 7 — Release (APK firmada)
 
 ## Cómo correr lo que hay hoy
 
+Requisitos: JDK 17+ (probado con 21), Node 20+ (probado con 24).
+
 ```bash
-./gradlew :engine:test        # 43 tests del motor de reglas
-./gradlew :server:test        # 15 tests del protocolo y la sala por WebSocket
-./gradlew :server:run         # servidor en http://localhost:8080 (4 jugadores)
-curl http://localhost:8080/api/info
+# Cliente web (una vez, o cuando cambies el front)
+cd web && npm install && npm run build && cd ..
+
+# Servidor con el cliente servido desde el mismo puerto
+./gradlew :server:run            # http://localhost:8080
 ```
 
-El servidor ya acepta partidas completas por WebSocket (`ws://localhost:8080/ws`).
-Falta el cliente web (Fase 3) para jugarlo con cartas en pantalla.
+Abrí `http://localhost:8080` en el navegador del teléfono (misma Wi-Fi que la PC) y jugá.
+
+```bash
+# Solo backend / reglas
+./gradlew :engine:test        # 43 tests del motor
+./gradlew :server:test        # 16 tests de protocolo y sala
+
+# End-to-end real en Chromium (requiere lo anterior compilado)
+./gradlew :server:installDist
+cd e2e && npm install && npx playwright test
+```
+
+### Desarrollo del front con recarga en caliente
+
+```bash
+./gradlew :server:run          # terminal 1: backend en :8080
+cd web && npm run dev          # terminal 2: Vite en :5173 con proxy a /ws y /api
+```
+
+El servidor también acepta `TRUCO_PUERTO` y `TRUCO_JUGADORES` (por defecto 8080 y 4).
+`curl http://localhost:8080/api/info` muestra el estado de la sala.

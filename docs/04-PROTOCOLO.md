@@ -176,3 +176,30 @@ Estos comportamientos no necesitan mensajes nuevos y evitan que la mesa se trabe
   (últimas 200), filtrado de cartas. 15 tests de integración con `testApplication` cubriendo
   lobby, equipos de 4, envido, mano completa, privacidad, `STALE_STATE`, timeout, reconexión, errores.
 - Modo desarrollo: `./gradlew :server:run` (ver `Main.kt`, puerto 8080, `TRUCO_JUGADORES`).
+
+## 10. Cliente web (`web/`, Fase 3)
+
+- Un solo store (`Cliente`) con `useSyncExternalStore`; sin Redux ni librerías de estado.
+- Cada acción lleva `id` (`crypto.randomUUID` con fallback: en `http://192.168.x.x` **no** hay contexto
+  seguro y `crypto.randomUUID` puede no existir).
+- `localStorage` guarda nombre y `playerToken`; al abrir/reconectar manda `hello` y después `rejoin`.
+  Si el token ya no existe (`TOKEN_INVALIDO`), lo descarta y vuelve a entrar con el nombre.
+- Reconexión exponencial (0.8 s → 6 s), `ping` cada 10 s y reintento inmediato al volver a la pestaña
+  (`visibilitychange`) o al recuperar red (`online`).
+- El countdown de los cantos usa `cantoPendiente.deadlineMs` del servidor (por eso el servidor
+  reprograma el timeout **antes** de emitir el estado: si no, el cliente mostraba el deadline viejo).
+- No se usa nada que requiera contexto seguro: nada de Service Worker, Clipboard ni `randomUUID` sin
+  fallback. Es la razón de no pelear por HTTPS en la LAN.
+
+## 11. Tests end-to-end (`e2e/`)
+
+Playwright con Chromium, viewport de Pixel 7, contra el servidor Kotlin real (`:server:installDist`)
+que sirve `web/dist`. Un test cubre el flujo completo: dos contextos de navegador, lobby, partida,
+privacidad de cartas, recarga con rejoin, mano completa y reparto automático.
+
+```bash
+cd e2e && npx playwright test
+```
+
+`e2e/scripts/captura.mjs` genera las capturas de `docs/capturas/` (útil para revisar el diseño sin
+abrir el teléfono).

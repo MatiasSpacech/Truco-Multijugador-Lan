@@ -99,6 +99,10 @@ según lo que acepte el dispositivo (`specialUse` como fallback), sin auditoría
 | Gradle | 9.4.1 (wrapper generado en el repo) |
 | Kotlin | 2.4.10 (version catalog `gradle/libs.versions.toml`) |
 | JUnit | 5.11.4 (Jupiter) |
+| Ktor | 3.6.1 (CIO + WebSockets) |
+| Node / npm | 24.14 / incluido en Node |
+| Cliente web | React 19.3, TypeScript 5.9, Vite 8.3 |
+| E2E | Playwright 1.64 (Chromium ya instalado en la máquina) |
 
 Falta para la Fase 4: `local.properties` con `sdk.dir=C\:\\AndroidSdk` y AGP (8.12 o 9.x, ya hay
 artefactos en la caché de Gradle).
@@ -109,4 +113,13 @@ artefactos en la caché de Gradle).
   (uno gama baja) y un router.
 - Matriz mínima de navegadores invitados: Chrome, Samsung Internet, Firefox, y Safari (iOS) si se
   quiere invitar a alguien con iPhone — **verificar `ws://` y `localStorage` en iOS**, es el caso más
-  frágil del plan.
+  frágil del plan. En la Fase 3 se probó en Chromium (emulado Pixel 7); el próximo paso es probarlo en
+  el teléfono real con la PC como servidor.
+
+### Lo que hay que evitar en el cliente web
+
+En una LAN por `http://` **no hay contexto seguro**. Por eso:
+
+- nada de Service Worker, `crypto.randomUUID` sin fallback, Clipboard ni geolocalización;
+- el manifest de PWA no se usa (no habría instalación offline de todos modos);
+- la app **no** depende de HTTPS: `ws://` plano es suficiente porque la red es de confianza.

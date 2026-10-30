@@ -10,6 +10,7 @@ import ar.truco.protocol.Errores
 import ar.truco.protocol.HelloPayload
 import ar.truco.protocol.InfoPayload
 import ar.truco.protocol.JoinPayload
+import ar.truco.protocol.LobbyPayload
 import ar.truco.protocol.PROTOCOL_VERSION
 import ar.truco.protocol.ReadyPayload
 import ar.truco.protocol.RejoinPayload
@@ -373,6 +374,28 @@ class SalaTest {
         assertEquals(2, resuelto.puntajes.sum(), "El envido vale 2 cuando se quiere")
         assertEquals(2, resuelto.envidoValores.size)
         assertNull(resuelto.cantoPendiente)
+    }
+
+    @Test
+    fun `despues del final la sala vuelve al lobby para la revancha`() = testApp(
+        configPrueba.copy(
+            rules = RulesConfig(jugadores = 2, targetScore = 1, timeoutCantoMs = 250, timeoutTurnoMs = 300),
+            pausaFinalMs = 120,
+        ),
+    ) { cliente ->
+        val ana = cliente.entrar("Ana")
+        val beto = cliente.entrar("Beto")
+        ana.listarse()
+        beto.listarse()
+
+        var vista = ana.sesion.vista(1)
+        ana.accion(vista, AccionDto.IrseAlMazo, "mazo-final")
+        vista = ana.sesion.vista(vista.seq + 1)
+        assertEquals("FIN_PARTIDA", vista.fase)
+
+        val lobby = desdeJson<LobbyPayload>(ana.sesion.esperar(Servidor.LOBBY).d)
+        assertFalse(lobby.partidaEnCurso)
+        assertTrue(lobby.asientos.none { it.listo }, "La revancha arranca sin nadie listo")
     }
 
     @Test

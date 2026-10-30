@@ -54,6 +54,27 @@ revisar cuando se use la variante).
 **Aceptado cuando:** 4 personas en 4 teléfonos reales juegan una mano completa sin instrucciones y
 sin bugs bloqueantes; el layout no rompe en 360×640 ni en pantallas con notch.
 
+## Fase 3 — Cliente web jugable ✅ (hecho)
+`cd web && npm run build` (typecheck + Vite, ~74 KB gzip) y `e2e → 1 test verde en Chromium real`.
+
+- React 19 + TypeScript estricto, sin librerías de UI ni CSS: 235 KB de JS, 10 KB de CSS, todo local
+  (nada de CDN: la red del juego no tiene internet).
+- Pantallas: ingreso, lobby (sillas, equipos, listos), mesa y overlay de fin de partida.
+- Mesa mobile-first: tanteador, “vale N”, carta de mano, bazas con parda, cartas rivales boca abajo
+  (o reveladas al cerrarse la mano), panel de cantos con countdown real del servidor, historia de la
+  mano y botón de mazo.
+- Solo se ofrecen las acciones que manda `legalActions`: el cliente no conoce las reglas.
+- Jugar una carta requiere **dos toques** (elegir + confirmar) para evitar errores en el teléfono.
+- Reconexión automática con backoff, `ping` cada 10 s, token en `localStorage` (`rejoin`), y al volver
+  a la pestaña se reintenta la conexión.
+- Si la sala vuelve al lobby tras el final, la mesa se cierra sola (revancha sin rearmar nada).
+- E2E (`e2e/`): dos contextos de navegador entran, se marcan listos, verifican que no se ven las
+  cartas del otro, recargan la página (recupera la silla y la mano), juegan la mano completa con
+  doble toque, comprueban el punto y el reparto automático de la mano siguiente.
+- Bug real encontrado por el E2E: con `explicitNulls = false` el `welcome` omitía `tuJugadorId` y el
+  cliente lo leía como `undefined` (pantalla en el lobby sin estar sentado). Se serializan los nulls
+  explícitos y el cliente usa `?? null`.
+
 ## Fase 4 — App Android anfitriona (3–4 sesiones)
 - Lobby Compose: nombre, cantidad de jugadores, `RulesConfig`, botón "Crear partida".
 - `ServerService` en primer plano + `WifiLock`/`WakeLock` + notificación con contador.
@@ -113,10 +134,10 @@ TrucoArgentino/
 ├─ server/                   Ktor: /api/info, /ws, estáticos ✅ (Fase 2)
 ├─ app/                      Android (Compose + Service + WebView) (Fase 4)
 │  └─ src/main/assets/web/   build del cliente (generado)
-├─ web/                      TS + Vite                   (Fase 3)
+├─ web/                      React + TS + Vite ✅ (Fase 3)
 │  ├─ src/{net,store,ui,rules-types}
 │  └─ package.json
-└─ e2e/                      Playwright                  (Fase 3)
+└─ e2e/                      Playwright ✅ (Fase 3)
 ```
 
 ## Orden sugerido si querés ver algo en pantalla rápido

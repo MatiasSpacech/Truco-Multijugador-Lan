@@ -11,7 +11,6 @@ val JsonTruco: Json = Json {
     ignoreUnknownKeys = true
     encodeDefaults = true
     classDiscriminator = "tipo"
-    explicitNulls = false
 }
 
 /** Serializa un mensaje con el envelope del protocolo. */
