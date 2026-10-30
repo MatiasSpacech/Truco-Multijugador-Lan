@@ -63,6 +63,9 @@ sin bugs bloqueantes; el layout no rompe en 360×640 ni en pantallas con notch.
 - Mesa mobile-first: tanteador, “vale N”, carta de mano, bazas con parda, cartas rivales boca abajo
   (o reveladas al cerrarse la mano), panel de cantos con countdown real del servidor, historia de la
   mano y botón de mazo.
+- **Baraja española de verdad**: palos de espada, basto, oro y copa dibujados como SVG inline (nada de
+  ♠♥♦♣), con doble filete, número en serif y el nombre de la figura (sota/caballo/rey) en el 10/11/12.
+  Sin fuentes ni imágenes remotas: los iconos heredan el color del palo (negro o rojo).
 - Solo se ofrecen las acciones que manda `legalActions`: el cliente no conoce las reglas.
 - Jugar una carta requiere **dos toques** (elegir + confirmar) para evitar errores en el teléfono.
 - Reconexión automática con backoff, `ping` cada 10 s, token en `localStorage` (`rejoin`), y al volver

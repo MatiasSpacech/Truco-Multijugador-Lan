@@ -268,13 +268,6 @@ export function urlWebSocket(): string {
 
 // ------------------------------------------------------------------ utilidades de presentación
 
-export const SIMBOLO_PALO: Record<Palo, string> = {
-  ESPADA: "♠",
-  BASTO: "♣",
-  ORO: "◉",
-  COPA: "♥",
-};
-
 export const NOMBRE_PALO: Record<Palo, string> = {
   ESPADA: "espada",
   BASTO: "basto",

@@ -33,3 +33,6 @@ playwright-report/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# --- e2e temporales ---
+e2e/.tmp/

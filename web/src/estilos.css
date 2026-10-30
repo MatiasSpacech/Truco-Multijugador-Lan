@@ -418,7 +418,7 @@ input:focus-visible {
 .rival-cartas {
   display: flex;
   align-items: flex-end;
-  min-height: 64px;
+  min-height: 68px;
 }
 
 .rival-cartas > * + * {
@@ -575,8 +575,8 @@ input:focus-visible {
 }
 
 .mi-mano .carta {
-  width: clamp(56px, 16vw, 72px);
-  height: clamp(82px, 23vw, 104px);
+  width: clamp(62px, 17.5vw, 78px);
+  height: clamp(90px, 26vw, 114px);
 }
 
 .acciones {
@@ -609,62 +609,103 @@ input:focus-visible {
 /* ------------------------------------------------------------------ cartas */
 
 .carta {
-  width: clamp(50px, 14vw, 66px);
-  height: clamp(74px, 20vw, 96px);
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.35);
-  background: linear-gradient(#fffdf5, #efe4c8);
-  color: #22201b;
+  position: relative;
+  width: clamp(58px, 17vw, 74px);
+  height: clamp(86px, 24vw, 108px);
+  border-radius: 7px;
+  border: 1px solid rgba(70, 50, 20, 0.5);
+  background: linear-gradient(160deg, #fffdf6, #f7eed6 68%, #eee0bf);
+  color: #211d16;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
   padding: 0;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.4);
   transition: transform 0.14s ease, box-shadow 0.14s ease;
   flex: none;
+  overflow: hidden;
+}
+
+/* doble filete de la baraja española */
+.carta::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(122, 90, 35, 0.32);
+  border-radius: 4px;
+  pointer-events: none;
 }
 
 .carta-numero {
-  font-size: clamp(20px, 6vw, 26px);
-  font-weight: 800;
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(15px, 4.6vw, 19px);
+  font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .carta-palo {
-  font-size: clamp(16px, 5vw, 21px);
-  line-height: 1;
+  display: flex;
+  justify-content: center;
+  width: 62%;
+  max-width: 46px;
+  margin-top: 7px;
+}
+
+.carta-icono-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.carta-figura {
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 7.5px;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
 }
 
 .carta.chica {
-  width: 44px;
-  height: 62px;
-  border-radius: 6px;
-  gap: 1px;
-  padding: 0;
+  width: 46px;
+  height: 66px;
+  border-radius: 5px;
 }
 
 .carta.chica .carta-numero {
-  font-size: 17px;
+  font-size: 13px;
+  top: 3px;
+  left: 4px;
 }
 
 .carta.chica .carta-palo {
-  font-size: 14px;
+  width: 62%;
+  max-width: 30px;
+  margin-top: 5px;
+}
+
+.carta.chica .carta-figura {
+  display: none;
 }
 
 .palo-espada,
 .palo-basto {
-  color: #24211c;
+  color: #1f1b14;
 }
 
 .palo-oro {
-  color: #9a7415;
+  color: #9c7416;
 }
 
 .palo-copa {
-  color: #a12b26;
+  color: #a82a24;
 }
 
 .carta:disabled {
@@ -701,8 +742,8 @@ input:focus-visible {
 
 .dorso {
   display: inline-block;
-  width: 44px;
-  height: 62px;
+  width: 46px;
+  height: 66px;
   border-radius: 6px;
   background: repeating-linear-gradient(45deg, #2c5f47, #2c5f47 4px, #24503c 4px, #24503c 8px);
   border: 1px solid rgba(0, 0, 0, 0.45);

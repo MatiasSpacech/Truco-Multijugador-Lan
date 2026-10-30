@@ -1,5 +1,6 @@
-import { NOMBRE_PALO, SIMBOLO_PALO } from "../net/cliente";
+import { NOMBRE_PALO } from "../net/cliente";
 import type { Carta as CartaDto } from "../tipos";
+import { FIGURA, IconoPalo } from "./Palos";
 
 interface Props {
   carta: CartaDto;
@@ -20,6 +21,8 @@ export function Carta({ carta, jugable = false, elegida = false, chica = false, 
     .filter(Boolean)
     .join(" ");
 
+  const figura = FIGURA[carta.numero];
+
   return (
     <button
       type="button"
@@ -29,9 +32,10 @@ export function Carta({ carta, jugable = false, elegida = false, chica = false, 
       aria-label={`${carta.numero} de ${NOMBRE_PALO[carta.palo]}`}
     >
       <span className="carta-numero">{carta.numero}</span>
-      <span className="carta-palo" aria-hidden="true">
-        {SIMBOLO_PALO[carta.palo]}
+      <span className="carta-palo">
+        <IconoPalo palo={carta.palo} />
       </span>
+      {figura && <span className="carta-figura">{figura}</span>}
     </button>
   );
 }
