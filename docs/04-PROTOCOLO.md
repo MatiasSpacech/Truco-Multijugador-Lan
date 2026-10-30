@@ -190,6 +190,9 @@ Estos comportamientos no necesitan mensajes nuevos y evitan que la mesa se trabe
   reprograma el timeout **antes** de emitir el estado: si no, el cliente mostraba el deadline viejo).
 - No se usa nada que requiera contexto seguro: nada de Service Worker, Clipboard ni `randomUUID` sin
   fallback. Es la razón de no pelear por HTTPS en la LAN.
+- **Nada de `vh`/`dvh` para la altura de las pantallas**: algunos WebViews (visto en el emulador de
+  Android 17) resuelven esas unidades a 0 y la pantalla queda vacía. Cada pantalla se posiciona con
+  `position: fixed; inset: 0`.
 
 ## 11. Tests end-to-end (`e2e/`)
 

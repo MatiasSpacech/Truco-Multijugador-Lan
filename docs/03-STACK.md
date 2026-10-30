@@ -96,16 +96,24 @@ según lo que acepte el dispositivo (`specialUse` como fallback), sin auditoría
 |-----------|---------|
 | JDK | Temurin 21.0.3 (en `PATH`) |
 | Android SDK | `C:\AndroidSdk` — platforms `android-36`, `android-37.0`; build-tools 36/37 |
-| Gradle | 9.4.1 (wrapper generado en el repo) |
-| Kotlin | 2.4.10 (version catalog `gradle/libs.versions.toml`) |
+| Gradle | 9.6.0 (wrapper en el repo; lo exige AGP 9.x) |
+| AGP | 9.5.0 (trae Kotlin 2.2.10 embebido) |
+| Kotlin | 2.2.10 (la que usa AGP; alineada en todos los módulos) |
+| compileSdk / targetSdk | 37 / 37 · minSdk 26 |
 | JUnit | 5.11.4 (Jupiter) |
 | Ktor | 3.6.1 (CIO + WebSockets) |
 | Node / npm | 24.14 / incluido en Node |
 | Cliente web | React 19.3, TypeScript 5.9, Vite 8.3 |
 | E2E | Playwright 1.64 (Chromium ya instalado en la máquina) |
 
-Falta para la Fase 4: `local.properties` con `sdk.dir=C\:\\AndroidSdk` y AGP (8.12 o 9.x, ya hay
-artefactos en la caché de Gradle).
+Falta para la Fase 4: `local.properties` con `sdk.dir=C:/AndroidSdk` (con barras normales; con
+`C\:\\AndroidSdk` AGP rechaza la ruta).
+
+**Ojo con AGP 9:** trae Kotlin embebido (KGP 2.2.10). Si se aplica `org.jetbrains.kotlin.android` —o
+se deja KGP en el classpath raíz con `apply false`— AGP falla con `BaseVariant` (removido en AGP 9).
+Regla del repo: los módulos JVM usan Kotlin 2.2.10 y `:app` solo aplica `com.android.application` +
+`org.jetbrains.kotlin.plugin.compose` (2.2.10). Si algún día se sube Kotlin, hay que subir el AGP que
+lo embeba.
 
 - `minSdk 26` (API 26 = Android 8.0) cubre ~97% de dispositivos y habilita `startLocalOnlyHotspot`.
 - `targetSdk` 36 (Android 16).

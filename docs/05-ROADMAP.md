@@ -78,7 +78,42 @@ sin bugs bloqueantes; el layout no rompe en 360×640 ni en pantallas con notch.
   cliente lo leía como `undefined` (pantalla en el lobby sin estar sentado). Se serializan los nulls
   explícitos y el cliente usa `?? null`.
 
-## Fase 4 — App Android anfitriona (3–4 sesiones)
+## Fase 4 — App Android anfitriona ✅ (hecho)
+`./gradlew :app:assembleDebug` → APK de debug, verificado en emulador Android 17 (API 37).
+
+- `:app` en Compose: lobby (1 vs 1 / 2 vs 2 / 3 vs 3, a 15/30, con flor), pantalla de servidor
+  (dirección, QR, contador de jugadores, zona Wi-Fi opcional) y la mesa en un WebView.
+- `ServicioServidor` en primer plano con `foregroundServiceType="specialUse"`, notificación
+  persistente con el contador y acción “Terminar”, `WifiLock` + `PARTIAL_WAKE_LOCK`.
+  **Probado con la pantalla apagada 45 s: el servidor siguió respondiendo y la partida intacta.**
+- El cliente web se empaqueta como recursos Java del APK bajo `web/` (tarea `copiarClienteWeb` que
+  sincroniza `web/dist` en `preBuild`), así el servidor lo sirve con el mismo `staticResources`
+  que en la PC.
+- QR con ZXing (sin red ni Play Services), IP local con `ConnectivityManager`, puerto libre
+  automático (8080, 8081…), y URL que se refresca sola cada 1,5 s.
+- Zona Wi-Fi con `startLocalOnlyHotspot` + permiso `NEARBY_WIFI_DEVICES`: verificado en el emulador
+  (red `AndroidShare_xxxx` + clave) y la dirección de la mesa se actualiza al nuevo IP.
+- Verificación real: la app abrió la mesa, 3 navegadores de la PC entraron por `adb forward`,
+  jugaron una mano; desde el WebView se jugó una carta, se volvió con el botón atrás y se terminó
+  la mesa (el servidor cerró).
+
+### Bugs que aparecieron en el camino (y quedaron arreglados)
+
+1. **Recursos en la raíz del APK**: copiar `web/dist` a `generated/web` dejaba `index.html` en la
+   raíz y `assets/*` mezclado con los assets de Android; `staticResources("/", "web")` daba 404.
+   Ahora se copia a `generated/cliente-web/web` (entradas `web/index.html`, `web/assets/...`).
+2. **El WebView del emulador resuelve `100vh`, `100dvh` y hasta el `height: 100%` del `html` a 0**, así
+   que las pantallas quedaban colapsadas. Las pantallas ahora usan `position: fixed; inset: 0`
+   (y coinciden con lo que ya hacía la mesa), que sí funciona en todos lados.
+3. **AGP 9 trae Kotlin embebido**: aplicar `org.jetbrains.kotlin.android` (o dejar KGP en el classpath
+   raíz con `apply false`) rompe con `BaseVariant`; hay que usar el Kotlin del AGP (2.2.10) y solo
+   aplicar el plugin de Compose de esa misma versión.
+4. **`local.properties`** con `C\:\\AndroidSdk` fallaba la validación del SDK; se escribe
+   `sdk.dir=C:/AndroidSdk`.
+
+**Pendiente de esta fase**: probar en teléfonos reales (el emulador no simula aislamiento de clientes
+ni consumo real de batería) y el caso de crear la zona Wi-Fi con jugadores ya conectados (cambia la IP:
+hay que reconectar).
 - Lobby Compose: nombre, cantidad de jugadores, `RulesConfig`, botón "Crear partida".
 - `ServerService` en primer plano + `WifiLock`/`WakeLock` + notificación con contador.
 - QR (zxing) con la URL y, si aplica, SSID/password del hotspot.
@@ -135,8 +170,8 @@ TrucoArgentino/
 │  └─ src/{main,test}/kotlin/ar/truco/engine/
 ├─ protocol/                 DTOs @Serializable ✅ (Fase 2)
 ├─ server/                   Ktor: /api/info, /ws, estáticos ✅ (Fase 2)
-├─ app/                      Android (Compose + Service + WebView) (Fase 4)
-│  └─ src/main/assets/web/   build del cliente (generado)
+├─ app/                      Android (Compose + Service + WebView) ✅ (Fase 4)
+│  └─ build/generated/cliente-web/web/   build del cliente (generado)
 ├─ web/                      React + TS + Vite ✅ (Fase 3)
 │  ├─ src/{net,store,ui,rules-types}
 │  └─ package.json

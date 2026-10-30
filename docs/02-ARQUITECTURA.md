@@ -83,13 +83,20 @@ Usuario toca "Detener" / última persona sale / partida termina sin revancha
   → cierra el WebSocket server, libera locks, detiene el servicio
 ```
 
-Detalles obligatorios:
-- Servicio con `START_NOT_STICKY`... en realidad `START_STICKY` para sobrevivir; decidir en Fase 4
-  y documentar (si el proceso muere, la partida se pierde: estado en memoria).
-- Restricción de batería: si el OEM mata el servicio, el usuario lo verá (notificación desaparece)
-  y la mesa muestra "Conexión perdida — Reintentando".
-- La mesa del anfitrión: WebView apuntando a `http://127.0.0.1:8080` con el mismo cliente web
-  (**D-02**), para no duplicar UI.
+Detalles obligatorios (implementados en `app/src/main/kotlin/ar/truco/app/servidor/`):
+- Servicio con `START_NOT_STICKY`: si el proceso muere no se reinicia a ciegas (no sabríamos con qué
+  configuración); el usuario ve que la notificación desapareció.
+- `foregroundServiceType="specialUse"` + `<property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE">`.
+- `WifiLock(WIFI_MODE_FULL_HIGH_PERF)` + `PARTIAL_WAKE_LOCK` (se liberan en `onDestroy`).
+- Notificación persistente con `http://ip:puerto · n/max` y acción “Terminar”.
+- La mesa del anfitrión es un WebView a `http://127.0.0.1:8080` con el mismo cliente web (D-02), con
+  `FLAG_KEEP_SCREEN_ON` mientras se juega; el botón atrás vuelve a la pantalla del servidor sin
+  cortar la partida.
+- El cliente web viaja como recursos Java del APK bajo `web/`; el servidor lo sirve con el mismo
+  `staticResources` que en la PC (en Android no hay `File` de assets).
+
+Verificado en emulador (API 37): pantalla apagada 45 s con el servidor respondiendo, hotspot
+`startLocalOnlyHotspot` funcionando y `Terminar` cerrando el servidor.
 
 ## 6. Reconexión y abandono
 

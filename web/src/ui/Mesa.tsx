@@ -30,6 +30,11 @@ export function Mesa({ vista, cliente, eventos, reconectando }: Props) {
     setElegida(null);
   }, [vista.seq]);
 
+  // Si el teclado del ingreso dejó el documento scrolleado, volvemos arriba.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   function tocarCarta(carta: CartaDto) {
     const clave = `${carta.palo}-${carta.numero}`;
     if (!claveJugable.has(clave) || pendiente !== null) return;

@@ -18,3 +18,4 @@ dependencyResolutionManagement {
 include(":engine")
 include(":protocol")
 include(":server")
+include(":app")

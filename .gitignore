@@ -36,3 +36,10 @@ desktop.ini
 
 # --- e2e temporales ---
 e2e/.tmp/
+
+# --- Android app ---
+app/build/
+e2e/.tmp/
+
+# heap dumps de la JVM (si el daemon de Gradle se queda sin memoria)
+*.hprof

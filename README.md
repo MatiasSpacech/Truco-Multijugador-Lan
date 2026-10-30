@@ -35,10 +35,22 @@ dentro del teléfono; los demás jugadores se conectan **desde el navegador** de
 
 ## Capturas
 
+**Cliente web (cualquier teléfono)**
+
 <table>
 <tr>
-<td><img src="docs/capturas/2-mesa.png" width="260" alt="Mesa de juego en el teléfono"><br><sub>La mesa</sub></td>
-<td><img src="docs/capturas/4-canto.png" width="260" alt="Canto de truco con Quiero / No quiero"><br><sub>Un canto de truco</sub></td>
+<td><img src="docs/capturas/2-mesa.png" width="240" alt="Mesa de juego"><br><sub>La mesa</sub></td>
+<td><img src="docs/capturas/4-canto.png" width="240" alt="Canto de truco"><br><sub>Un canto</sub></td>
+</tr>
+</table>
+
+**App Android (anfitrión)**
+
+<table>
+<tr>
+<td><img src="docs/capturas/app/1-lobby.png" width="200" alt="Lobby de la app"><br><sub>Configurar</sub></td>
+<td><img src="docs/capturas/app/2-servidor.png" width="200" alt="QR y dirección"><br><sub>QR para entrar</sub></td>
+<td><img src="docs/capturas/app/3-mesa-app.png" width="200" alt="Mesa en el WebView"><br><sub>La mesa en el teléfono</sub></td>
 </tr>
 </table>
 
@@ -48,33 +60,35 @@ dentro del teléfono; los demás jugadores se conectan **desde el navegador** de
 - [x] Fase 1 — Motor de reglas (Kotlin puro, 43 tests, 480 partidas aleatorias)
 - [x] Fase 2 — Protocolo y servidor Ktor (16 tests de integración por WebSocket)
 - [x] Fase 3 — Cliente web jugable + E2E en navegador real
-- [ ] Fase 4 — App Android: servicio en primer plano, QR, hotspot
+- [x] Fase 4 — App Android: servicio en primer plano, QR, hotspot, WebView
 - [ ] Fase 5 — Contraflor, malas y buenas, abandono fino
 - [ ] Fase 6 — Pulido (animaciones, sonido, accesibilidad)
 - [ ] Fase 7 — Release (APK firmada)
 
 ## Cómo correr lo que hay hoy
 
-Requisitos: JDK 17+ (probado con 21), Node 20+ (probado con 24).
+Requisitos: JDK 17+ (probado con 21), Node 20+ (probado con 24) y Android SDK con `platforms;android-37`.
 
 ```bash
-# Cliente web (una vez, o cuando cambies el front)
+# 1) Cliente web (una vez, o cuando cambies el front)
 cd web && npm install && npm run build && cd ..
 
-# Servidor con el cliente servido desde el mismo puerto
+# 2) APK para el teléfono anfitrión
+./gradlew :app:assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+# 3) O probarlo con la PC como servidor
 ./gradlew :server:run            # http://localhost:8080
 ```
 
-Abrí `http://localhost:8080` en el navegador del teléfono (misma Wi-Fi que la PC) y jugá.
+En la app: elegí jugadores y partido → **Crear mesa** → los demás escanean el QR (o abren la
+`http://<ip>:8080` que muestra la pantalla) → **Estoy listo**.
 
 ```bash
-# Solo backend / reglas
+# Tests
 ./gradlew :engine:test        # 43 tests del motor
 ./gradlew :server:test        # 16 tests de protocolo y sala
-
-# End-to-end real en Chromium (requiere lo anterior compilado)
-./gradlew :server:installDist
-cd e2e && npm install && npx playwright test
+cd e2e && npx playwright test # E2E real en Chromium (compila :server:installDist si falta)
 ```
 
 ### Desarrollo del front con recarga en caliente
