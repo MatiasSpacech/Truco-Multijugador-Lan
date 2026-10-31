@@ -33,9 +33,9 @@ android {
         applicationId = "ar.truco.app"
         minSdk = 26
         targetSdk = 37
-        // Primera versión pública (Fase 7). Subir versionCode en cada APK que se distribuya.
-        versionCode = 1
-        versionName = "1.0.0"
+        // Subir versionCode en cada APK que se distribuya.
+        versionCode = 2
+        versionName = "1.0.1"
     }
 
     buildFeatures {

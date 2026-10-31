@@ -17,7 +17,7 @@ dentro del teléfono; los demás jugadores se conectan **desde el navegador** de
 
 [![Última versión](https://img.shields.io/github/v/release/MatiasSpacech/Truco-Multijugador-Lan?label=versi%C3%B3n&color=d9b36a)](https://github.com/MatiasSpacech/Truco-Multijugador-Lan/releases/latest)
 
-**[⬇️ Descargar `truco-argentino-1.0.0.apk`](https://github.com/MatiasSpacech/Truco-Multijugador-Lan/releases/latest/download/truco-argentino-1.0.0.apk)**
+**[⬇️ Descargar `truco-argentino.apk`](https://github.com/MatiasSpacech/Truco-Multijugador-Lan/releases/latest/download/truco-argentino.apk)**
 · Android 8+ · 2,2 MB · sin Play Store · [changelog](CHANGELOG.md)
 
 **En un minuto:**
@@ -41,7 +41,7 @@ Guía completa (permisos, zona Wi-Fi, problemas comunes): **[docs/06-INSTALACION
 | [docs/04-PROTOCOLO.md](docs/04-PROTOCOLO.md) | Mensajes WebSocket, secuencias, errores |
 | [docs/05-ROADMAP.md](docs/05-ROADMAP.md) | Fases, entregables y criterios de aceptación |
 | [docs/06-INSTALACION.md](docs/06-INSTALACION.md) | Instalar el APK, crear la mesa, problemas comunes |
-| [CHANGELOG.md](CHANGELOG.md) | Qué trae la 1.0.0 |
+| [CHANGELOG.md](CHANGELOG.md) | Qué trae cada versión |
 
 ## Decisiones tomadas
 

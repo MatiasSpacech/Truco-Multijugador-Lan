@@ -94,6 +94,10 @@ Detalles obligatorios (implementados en `app/src/main/kotlin/ar/truco/app/servid
   cortar la partida.
 - El cliente web viaja como recursos Java del APK bajo `web/`; el servidor lo sirve con el mismo
   `staticResources` que en la PC (en Android no hay `File` de assets).
+- **Cuidado con las unidades de viewport en el WebView**: resuelve `100vh`/`100dvh` (y el `height:100%`
+  encadenado) a **0**. Por eso las pantallas usan `position: fixed; inset: 0` y las hojas calculan su
+  alto con `--alto-visible`, que publica `web/src/viewport.ts` desde `window.innerHeight`. Usar `vh`
+  en una hoja la deja en 0 px (bug real de la 1.0.0, arreglado en la 1.0.1).
 
 Verificado en emulador (API 37): pantalla apagada 45 s con el servidor respondiendo, hotspot
 `startLocalOnlyHotspot` funcionando y `Terminar` cerrando el servidor.

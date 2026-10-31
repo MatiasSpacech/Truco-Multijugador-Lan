@@ -3,6 +3,23 @@
 Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). El proyecto usa
 versionado semántico a partir de la 1.0.0; antes de eso cada fase fue un hito interno.
 
+## [1.0.1] — 2026-10-31
+
+### Arreglado
+
+- **La sala de espera de la app Android no mostraba “Cómo se juega” ni “Ajustes”**: el WebView de
+  Android resuelve `100vh` a 0, así que la hoja (que tenía `max-height: 82vh`) quedaba en 0 px y
+  solo se veía el fondo oscurecido. Ahora el alto real de la ventana se publica desde JS en
+  `--alto-visible` y el CSS de las hojas no usa unidades de viewport (`web/src/viewport.ts`).
+  Verificado en el emulador por CDP: `100vh = 0`, `innerHeight = 866`, hoja de 553 px visible.
+- La hoja y el tutorial quedan anclados abajo y **se cierran tocando el fondo**, para que no pueda
+  quedar una pantalla bloqueada si el WebView arrastra un viewport viejo después del teclado.
+
+### Cambiado
+
+- El APK se publica como `truco-argentino.apk` (nombre estable) para que el link “latest” del README
+  no dependa de la versión.
+
 ## [1.0.0] — 2026-10-31
 
 Primera versión pública. APK firmada, R8 activado y verificada de punta a punta en emulador

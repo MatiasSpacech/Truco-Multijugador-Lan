@@ -120,7 +120,7 @@ class ServicioServidor : Service() {
                 flor = if (flor) FlorMode.FLOR else FlorMode.SIN_FLOR,
             ),
             codigo = "TRUCO",
-            serverVersion = "1.0.0",
+            serverVersion = "1.0.1",
             assetsDir = null,
         )
 
