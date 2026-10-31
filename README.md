@@ -13,6 +13,23 @@ dentro del teléfono; los demás jugadores se conectan **desde el navegador** de
 └──────────────┘                     └───────────────┘
 ```
 
+## Descargar
+
+[![Última versión](https://img.shields.io/github/v/release/MatiasSpacech/Truco-Multijugador-Lan?label=versi%C3%B3n&color=d9b36a)](https://github.com/MatiasSpacech/Truco-Multijugador-Lan/releases/latest)
+
+**[⬇️ Descargar `truco-argentino-1.0.0.apk`](https://github.com/MatiasSpacech/Truco-Multijugador-Lan/releases/latest/download/truco-argentino-1.0.0.apk)**
+· Android 8+ · 2,2 MB · sin Play Store · [changelog](CHANGELOG.md)
+
+**En un minuto:**
+
+1. Instalá el APK en el teléfono que va a hacer de anfitrión (hay que permitir “instalar apps
+   desconocidas” para el explorador de archivos o el navegador).
+2. Abrí **Truco Argentino**, elegí jugadores (1 vs 1, 2 vs 2, 3 vs 3), partido a 15 o 30 y si juegan
+   con flor → **Crear mesa**.
+3. Los demás abren el QR con la cámara, ponen su nombre y tocan **Estoy listo**. No instalan nada.
+
+Guía completa (permisos, zona Wi-Fi, problemas comunes): **[docs/06-INSTALACION.md](docs/06-INSTALACION.md)**.
+
 ## Documentación
 
 | Doc | Contenido |
@@ -25,13 +42,6 @@ dentro del teléfono; los demás jugadores se conectan **desde el navegador** de
 | [docs/05-ROADMAP.md](docs/05-ROADMAP.md) | Fases, entregables y criterios de aceptación |
 | [docs/06-INSTALACION.md](docs/06-INSTALACION.md) | Instalar el APK, crear la mesa, problemas comunes |
 | [CHANGELOG.md](CHANGELOG.md) | Qué trae la 1.0.0 |
-
-## Instalar y jugar
-
-El APK de release está en `app/build/outputs/apk/release/app-release.apk` (firmado, ~2,2 MB, Android 8+).
-Se pasa al teléfono anfitrión, se instala habilitando "instalar apps desconocidas" y listo: los demás
-entran desde el navegador con el QR. Paso a paso, permisos y problemas comunes:
-[docs/06-INSTALACION.md](docs/06-INSTALACION.md).
 
 ## Decisiones tomadas
 
