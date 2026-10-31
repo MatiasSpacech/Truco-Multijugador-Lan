@@ -1,12 +1,16 @@
+import { t, usarIdioma } from "../i18n";
 import type { Lobby as LobbyDto } from "../tipos";
 
 interface Props {
   lobby: LobbyDto;
   miId: number;
   onListo: (listo: boolean) => void;
+  onAyuda: () => void;
+  onAjustes: () => void;
 }
 
-export function Lobby({ lobby, miId, onListo }: Props) {
+export function Lobby({ lobby, miId, onListo, onAyuda, onAjustes }: Props) {
+  usarIdioma();
   const yo = lobby.asientos.find((asiento) => asiento.id === miId);
   const libres = Math.max(0, lobby.config.jugadores - lobby.asientos.length);
   const listos = lobby.asientos.filter((asiento) => asiento.listo).length;
@@ -15,16 +19,20 @@ export function Lobby({ lobby, miId, onListo }: Props) {
     <div className="pantalla lobby">
       <header className="encabezado">
         <p className="codigo">
-          Sala <strong>{lobby.codigo}</strong>
+          {t("lobby_sala")} <strong>{lobby.codigo}</strong>
         </p>
-        <h2>Esperando jugadores</h2>
+        <h2>{t("lobby_esperando")}</h2>
         <p className="resumen">
-          {lobby.config.jugadores} jugadores · a {lobby.config.targetScore}
-          {lobby.config.malasYBuenas ? " (malas y buenas)" : ""} ·{" "}
-          {lobby.config.flor === "FLOR" ? "con flor" : "sin flor"}
+          {t("lobby_resumen", { jugadores: lobby.config.jugadores, objetivo: lobby.config.targetScore })}
+          {lobby.config.malasYBuenas ? ` ${t("lobby_malas_buenas")}` : ""} ·{" "}
+          {lobby.config.flor === "FLOR" ? t("lobby_con_flor") : t("lobby_sin_flor")}
         </p>
         <p className="resumen">
-          {lobby.asientos.length}/{lobby.config.jugadores} en la mesa · {listos} listo(s)
+          {t("lobby_en_mesa", {
+            dentro: lobby.asientos.length,
+            total: lobby.config.jugadores,
+            listos,
+          })}
         </p>
       </header>
 
@@ -37,10 +45,14 @@ export function Lobby({ lobby, miId, onListo }: Props) {
             <span className={`equipo equipo-${asiento.equipo}`}>{asiento.equipo === 0 ? "A" : "B"}</span>
             <span className="nombre">
               {asiento.nombre}
-              {asiento.esHost ? <em> · anfitrión</em> : null}
+              {asiento.esHost ? <em>{t("lobby_anfitrion")}</em> : null}
             </span>
             <span className={`insignia ${asiento.listo ? "ok" : ""}`}>
-              {!asiento.conectado ? "sin conexión" : asiento.listo ? "listo" : "esperando"}
+              {!asiento.conectado
+                ? t("lobby_sin_conexion")
+                : asiento.listo
+                  ? t("lobby_listo")
+                  : t("lobby_esperando_estado")}
             </span>
           </li>
         ))}
@@ -50,20 +62,26 @@ export function Lobby({ lobby, miId, onListo }: Props) {
             <span className={`equipo equipo-${(lobby.asientos.length + indice) % 2}`}>
               {(lobby.asientos.length + indice) % 2 === 0 ? "A" : "B"}
             </span>
-            <span className="nombre">Lugar libre</span>
+            <span className="nombre">{t("lobby_lugar_libre")}</span>
             <span className="insignia">—</span>
           </li>
         ))}
       </ol>
 
       <button className={yo?.listo ? "secundario" : "primario"} onClick={() => onListo(!yo?.listo)}>
-        {yo?.listo ? "Cancelar" : "Estoy listo"}
+        {yo?.listo ? t("lobby_cancelar") : t("lobby_estoy_listo")}
       </button>
 
-      <p className="pie">
-        Cuando estén todos listos, la partida empieza sola. Los compañeros de equipo juegan
-        enfrentados: asientos 1 y 3 son del equipo A, 2 y 4 del equipo B.
-      </p>
+      <div className="fila">
+        <button type="button" className="secundario chico" onClick={onAyuda}>
+          {t("lobby_como_jugar")}
+        </button>
+        <button type="button" className="secundario chico" onClick={onAjustes}>
+          {t("ajustes")}
+        </button>
+      </div>
+
+      <p className="pie">{t("lobby_pie")}</p>
     </div>
   );
 }

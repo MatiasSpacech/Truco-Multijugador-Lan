@@ -32,7 +32,7 @@
 | `welcome` | `{ protocolVersion, serverVersion, tuJugadorId, playerToken }` | Respuesta a `hello`/`join`/`rejoin` |
 | `lobby` | `{ asientos: [{ id, nombre, equipo, conectado, listo, esHost }], config, codigo }` | Estado de la sala |
 | `state` | `{ seq, fase, ... vista privada ... }` | Estado completo filtrado para este jugador |
-| `events` | `{ seq, eventos: [{ tipo, ... }] }` | Para animaciones/sonido/log (no es la fuente de verdad) |
+| `events` | `{ seq, eventos: [{ tipo, ... }] }` | Para animaciones/sonido/log (no es la fuente de verdad). Cada evento trae campos estructurados (jugador, carta, canto, puntos, equipo, valores, parda, quiero, aceptado, porRechazo, manoNumero, valorMano, puntajes) para que el cliente lo traduzca; `texto` queda en español como fallback. |
 | `error` | `{ code, mensaje, fatal }` | Ver §6 |
 | `pong` | `{ ts }` | Respuesta a `ping` |
 | `ended` | `{ motivo }` | Partida o sala cerrada (`HOST_LEFT`, `FIN`, `KICKED`) |
@@ -84,7 +84,9 @@ Reglas de privacidad (verificadas en `server/src/test/kotlin/ar/truco/server/Sal
 - Hay un test que compara el JSON emitido a A contra las cartas de B y falla si aparece una sola.
 
 Otros payloads del servidor: `welcome`, `lobby`, `state`, `events`, `error`, `pong`, `ended`
-(en `protocol/.../Mensajes.kt`). Los eventos traen `texto` ya redactado en español para el log de la mesa.
+(en `protocol/.../Mensajes.kt`). Los eventos traen `texto` ya redactado en español **y** los datos
+estructurados del evento: el cliente arma la historia en el idioma elegido (es/en) y usa `texto` solo
+si le falta algún dato.
 
 ## 4. `Accion`
 

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import type { Page } from "@playwright/test";
 
 async function entrar(page: Page, nombre: string) {
@@ -6,6 +6,12 @@ async function entrar(page: Page, nombre: string) {
   await page.locator("#nombre").fill(nombre);
   await page.getByRole("button", { name: "Entrar a la mesa" }).click();
   await expect(page.getByRole("button", { name: "Estoy listo" })).toBeVisible();
+}
+
+/** El tutorial de 3 pasos tapa la mesa la primera vez en este dispositivo. */
+async function saltearTutorial(page: Page) {
+  const saltar = page.getByRole("button", { name: "Saltear" });
+  if (await saltar.isVisible().catch(() => false)) await saltar.click();
 }
 
 async function cartasEnMano(page: Page): Promise<string[]> {
@@ -48,6 +54,8 @@ test("dos jugadores juegan una mano, se recarga sin perder la silla y se anota e
   // Arranca la partida: cada uno ve 3 cartas.
   await expect(ana.locator(".mi-mano .carta")).toHaveCount(3);
   await expect(beto.locator(".mi-mano .carta")).toHaveCount(3);
+  await saltearTutorial(ana);
+  await saltearTutorial(beto);
 
   // Nadie ve las cartas del otro.
   const cartasAna = await cartasEnMano(ana);

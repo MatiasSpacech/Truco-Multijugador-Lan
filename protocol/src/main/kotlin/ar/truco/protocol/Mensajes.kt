@@ -235,6 +235,13 @@ data class StatePayload(
     val partidaGanadaPor: Int? = null,
 )
 
+/**
+ * Evento para la historia, el log y los sonidos del cliente.
+ *
+ * `texto` viene armado en español (compatibilidad y debug), pero el cliente traduce a partir de
+ * los campos estructurados (jugador, carta, canto, puntos, valores...). Todos son opcionales:
+ * si a un tipo de evento le falta un dato, el cliente cae al `texto` del servidor.
+ */
 @Serializable
 data class EventoDto(
     val tipo: String,
@@ -245,6 +252,14 @@ data class EventoDto(
     val canto: String? = null,
     val puntos: Int? = null,
     val equipo: Int? = null,
+    val valores: List<Int>? = null,
+    val parda: Boolean? = null,
+    val quiero: Boolean? = null,
+    val aceptado: Boolean? = null,
+    val porRechazo: Boolean? = null,
+    val manoNumero: Int? = null,
+    val valorMano: Int? = null,
+    val puntajes: List<Int>? = null,
 )
 
 @Serializable

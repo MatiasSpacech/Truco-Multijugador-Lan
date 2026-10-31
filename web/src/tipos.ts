@@ -121,6 +121,15 @@ export interface Evento {
   canto?: string;
   puntos?: number;
   equipo?: number;
+  /** Campos extra para traducir el evento sin depender del `texto` del servidor. */
+  valores?: number[] | null;
+  parda?: boolean | null;
+  quiero?: boolean | null;
+  aceptado?: boolean | null;
+  porRechazo?: boolean | null;
+  manoNumero?: number | null;
+  valorMano?: number | null;
+  puntajes?: number[] | null;
 }
 
 export interface Welcome {

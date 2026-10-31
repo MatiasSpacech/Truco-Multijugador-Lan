@@ -1,5 +1,8 @@
-import type { Accion, Carta, Evento, Lobby, Palo, Vista, Welcome } from "../tipos";
+import type { Accion, Carta, Evento, Lobby, Vista, Welcome } from "../tipos";
 import { PROTOCOL_VERSION } from "../tipos";
+import { copiarDiagnostico, descargarDiagnostico, registrar } from "../diagnostico";
+import type { ContextoDiagnostico } from "../diagnostico";
+import { preferencias } from "../preferencias";
 
 const CLAVE_TOKEN = "truco.token";
 const CLAVE_NOMBRE = "truco.nombre";
@@ -64,6 +67,38 @@ export class Cliente {
 
   nombreGuardado = (): string => this.nombre ?? "";
 
+  /** Datos de la sesión que acompañan al log de diagnóstico. */
+  contextoDiagnostico(): ContextoDiagnostico {
+    const { fase, miId, lobby, vista, motivo } = this.estado;
+    return {
+      fase,
+      miJugadorId: miId,
+      sala: lobby?.codigo ?? null,
+      jugadores: lobby?.config.jugadores ?? null,
+      partidaEnCurso: lobby?.partidaEnCurso ?? null,
+      etapa: vista?.etapa ?? null,
+      mano: vista?.manoNumero ?? null,
+      estadoSeq: vista?.seq ?? null,
+      turno: vista?.turno ?? null,
+      motivo,
+      protocolo: PROTOCOL_VERSION,
+      idioma: preferencias().idioma,
+      tema: preferencias().tema,
+      sonido: preferencias().sonido,
+      vibracion: preferencias().vibracion,
+      socket: this.ws ? ["CONNECTING", "OPEN", "CLOSING", "CLOSED"][this.ws.readyState] ?? "?" : "—",
+      reintentos: this.intentos,
+    };
+  }
+
+  descargarDiagnostico(): void {
+    descargarDiagnostico(this.contextoDiagnostico());
+  }
+
+  copiarDiagnostico(): Promise<boolean> {
+    return copiarDiagnostico(this.contextoDiagnostico());
+  }
+
   iniciar(): void {
     if (!this.ws && !this.cerrado) this.conectar();
   }
@@ -117,6 +152,7 @@ export class Cliente {
     if (this.cerrado) return;
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) return;
 
+    registrar("!", "conectar", `intento ${this.intentos + 1} → ${this.url}`);
     this.actualizar({ fase: this.intentos === 0 ? "iniciando" : "reconectando", motivo: null });
 
     const ws = new WebSocket(this.url);
@@ -124,6 +160,7 @@ export class Cliente {
 
     ws.onopen = () => {
       this.intentos = 0;
+      registrar("!", "abierto", this.url);
       this.actualizar({ fase: "online", aviso: null });
       this.enviar("hello", { nombre: this.nombre ?? "", protocolVersion: PROTOCOL_VERSION });
 
@@ -136,15 +173,17 @@ export class Cliente {
 
     ws.onmessage = (evento) => this.recibir(String(evento.data));
 
-    ws.onclose = () => {
+    ws.onclose = (evento) => {
       this.detenerPing();
       this.ws = null;
       if (this.cerrado) return;
+      registrar("!", "cerrado", `code ${evento.code}${evento.reason ? ` · ${evento.reason}` : ""}`);
       this.actualizar({ fase: "reconectando" });
       this.programarReconexion();
     };
 
     ws.onerror = () => {
+      registrar("!", "error", "el socket falló (el cierre viene después)");
       /* el cierre siempre viene después: ahí reconectamos */
     };
   }
@@ -153,6 +192,7 @@ export class Cliente {
     if (this.cerrado || this.timerReconexion) return;
     const espera = Math.min(800 * 2 ** this.intentos, 6_000);
     this.intentos += 1;
+    registrar("!", "reconexion", `en ${espera} ms`);
     this.timerReconexion = setTimeout(() => {
       this.timerReconexion = null;
       this.conectar();
@@ -172,9 +212,14 @@ export class Cliente {
   }
 
   private enviar(tipo: string, payload: unknown, id?: string): void {
-    if (this.ws?.readyState !== WebSocket.OPEN) return;
+    if (this.ws?.readyState !== WebSocket.OPEN) {
+      registrar("!", "no-enviado", tipo);
+      return;
+    }
     const sobre = { t: tipo, v: PROTOCOL_VERSION, d: payload ?? {}, ...(id ? { id } : {}) };
-    this.ws.send(JSON.stringify(sobre));
+    const texto = JSON.stringify(sobre);
+    registrar("→", tipo, texto.slice(0, 400));
+    this.ws.send(texto);
   }
 
   private recibir(texto: string): void {
@@ -182,8 +227,11 @@ export class Cliente {
     try {
       sobre = JSON.parse(texto) as { t: string; d: unknown };
     } catch {
+      registrar("!", "json-invalido", texto.slice(0, 120));
       return;
     }
+
+    if (sobre.t !== "pong") registrar("←", sobre.t, texto.slice(0, 400));
 
     switch (sobre.t) {
       case "welcome": {
@@ -236,6 +284,7 @@ export class Cliente {
   }
 
   private manejarError(error: { code: string; mensaje: string; fatal: boolean }): void {
+    registrar("!", `error:${error.code}`, error.mensaje);
     if (error.fatal) {
       this.cerrado = true;
       this.actualizar({ fase: "cerrado", motivo: error.mensaje });
@@ -268,47 +317,9 @@ export function urlWebSocket(): string {
 
 // ------------------------------------------------------------------ utilidades de presentación
 
-export const NOMBRE_PALO: Record<Palo, string> = {
-  ESPADA: "espada",
-  BASTO: "basto",
-  ORO: "oro",
-  COPA: "copa",
-};
-
-export function nombreCarta(carta: Carta): string {
-  return `${carta.numero} de ${NOMBRE_PALO[carta.palo]}`;
-}
-
 export function mismaCarta(a: Carta, b: Carta): boolean {
   return a.palo === b.palo && a.numero === b.numero;
 }
-
-export const ETIQUETA_CANTO: Record<string, string> = {
-  ENVIDO: "envido",
-  REAL_ENVIDO: "real envido",
-  FALTA_ENVIDO: "falta envido",
-  TRUCO: "truco",
-  RETRUCO: "retruco",
-  VALE_CUATRO: "vale cuatro",
-  FLOR: "flor",
-  CONTRAFLOR: "contraflor",
-  CONTRAFLOR_AL_RESTO: "contraflor al resto",
-};
-
-export const ETIQUETA_ACCION: Record<string, string> = {
-  CANTAR_ENVIDO: "Envido",
-  CANTAR_REAL_ENVIDO: "Real envido",
-  CANTAR_FALTA_ENVIDO: "Falta envido",
-  CANTAR_TRUCO: "¡Truco!",
-  CANTAR_RETRUCO: "¡Retruco!",
-  CANTAR_VALE_CUATRO: "¡Vale cuatro!",
-  CANTAR_FLOR: "Flor",
-  CANTAR_CONTRAFLOR: "Contraflor",
-  CANTAR_CONTRAFLOR_AL_RESTO: "Contraflor al resto",
-  IRSE_AL_MAZO: "Me voy al mazo",
-  RESPONDER_QUIERO: "Quiero",
-  RESPONDER_NO_QUIERO: "No quiero",
-};
 
 export function accionDesdeNombre(nombre: string): Accion | null {
   if (nombre.startsWith("CANTAR_")) {

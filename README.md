@@ -44,6 +44,17 @@ dentro del teléfono; los demás jugadores se conectan **desde el navegador** de
 </tr>
 </table>
 
+**Pulido (Fase 6)**
+
+<table>
+<tr>
+<td><img src="docs/capturas/8-tutorial.png" width="200" alt="Tutorial de 3 pasos"><br><sub>Tutorial la primera vez</sub></td>
+<td><img src="docs/capturas/6-ajustes.png" width="200" alt="Ajustes"><br><sub>Idioma, tema, sonido y log</sub></td>
+<td><img src="docs/capturas/7-ayuda.png" width="200" alt="Ayuda de reglas"><br><sub>Reglas desde la mesa</sub></td>
+<td><img src="docs/capturas/9-tema-claro.png" width="200" alt="Tema claro"><br><sub>Tema claro</sub></td>
+</tr>
+</table>
+
 **App Android (anfitrión)**
 
 <table>
@@ -62,7 +73,7 @@ dentro del teléfono; los demás jugadores se conectan **desde el navegador** de
 - [x] Fase 3 — Cliente web jugable + E2E en navegador real
 - [x] Fase 4 — App Android: servicio en primer plano, QR, hotspot, WebView
 - [x] Fase 5 — Contraflor, malas y buenas a 30, abandono fino
-- [ ] Fase 6 — Pulido (animaciones, sonido, accesibilidad)
+- [x] Fase 6 — Pulido: i18n es/en, tutorial, ayuda, sonido, tema claro/oscuro, a11y, log
 - [ ] Fase 7 — Release (APK firmada)
 
 ## Cómo correr lo que hay hoy
@@ -88,7 +99,8 @@ En la app: elegí jugadores y partido → **Crear mesa** → los demás escanean
 # Tests
 ./gradlew :engine:test        # 53 tests del motor (incluye flor/contraflor y malas y buenas)
 ./gradlew :server:test        # 18 tests de protocolo y sala (incluye abandono)
-cd e2e && npx playwright test # E2E real en Chromium (compila :server:installDist si falta)
+cd web && npm test            # 15 tests del cliente (i18n, preferencias, diagnóstico)
+cd e2e && npx playwright test # 3 E2E reales en Chromium, cada uno con su servidor
 ```
 
 ### Desarrollo del front con recarga en caliente

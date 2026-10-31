@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { etiquetaAccion, nombreCanto, nombreEquipo, t, usarIdioma } from "../i18n";
 import type { Cliente } from "../net/cliente";
-import { ETIQUETA_ACCION, ETIQUETA_CANTO, accionDesdeNombre, mismaCarta } from "../net/cliente";
+import { accionDesdeNombre, mismaCarta } from "../net/cliente";
+import { cambiarPreferencias, preferencias } from "../preferencias";
+import { sonar, vibrar } from "../sonido";
 import type { Asiento, Baza, Carta as CartaDto, Evento, Vista } from "../tipos";
 import { Carta } from "./Carta";
+import { Panel } from "./Panel";
+import type { Pestana } from "./Panel";
+import { Tutorial } from "./Tutorial";
 
 interface Props {
   vista: Vista;
@@ -12,8 +18,10 @@ interface Props {
 }
 
 export function Mesa({ vista, cliente, eventos, reconectando }: Props) {
+  usarIdioma();
   const [elegida, setElegida] = useState<CartaDto | null>(null);
-  const [verHistoria, setVerHistoria] = useState(false);
+  const [panel, setPanel] = useState<Pestana | null>(null);
+  const [tutorial, setTutorial] = useState(() => !preferencias().tutorialVisto);
 
   const yo = vista.asientos[vista.miJugadorId];
   const claveJugable = new Set(vista.cartasJugables.map((carta) => `${carta.palo}-${carta.numero}`));
@@ -25,6 +33,7 @@ export function Mesa({ vista, cliente, eventos, reconectando }: Props) {
   const miRespondo = pendiente?.respondedor === vista.miJugadorId;
   const restante = useRestante(pendiente?.deadlineMs);
   const enJuego = vista.fase === "JUEGO" || vista.fase === "FLOR";
+  const nombres = vista.asientos.map((asiento) => asiento.nombre);
 
   useEffect(() => {
     setElegida(null);
@@ -35,19 +44,38 @@ export function Mesa({ vista, cliente, eventos, reconectando }: Props) {
     window.scrollTo(0, 0);
   }, []);
 
+  useSonidosDeEventos(eventos);
+  useAvisoDeTurno(esMiTurno);
+
+  function cerrarTutorial() {
+    cambiarPreferencias({ tutorialVisto: true });
+    setTutorial(false);
+  }
+
   function tocarCarta(carta: CartaDto) {
     const clave = `${carta.palo}-${carta.numero}`;
     if (!claveJugable.has(clave) || pendiente !== null) return;
     if (elegida && mismaCarta(elegida, carta)) {
       cliente.accion({ tipo: "JUGAR_CARTA", carta });
       setElegida(null);
+      vibrar(10);
       return;
     }
     setElegida(carta);
+    vibrar(6);
   }
 
+  const anuncio = pendiente
+    ? t("mesa_canto", {
+        nombre: nombreDe(vista, pendiente.deJugador),
+        canto: nombreCanto(pendiente.canto),
+      })
+    : esMiTurno
+      ? t("mesa_tu_turno")
+      : t("mesa_turno_anuncio", { nombre: nombreDe(vista, vista.turno) });
+
   return (
-    <main className={`mesa fase-${vista.fase.toLowerCase()}`}>
+    <main className={`mesa fase-${vista.fase.toLowerCase()}`} aria-label={t("mesa_aria_mesa")}>
       <header className="barra">
         <div className="tanteador">
           <Puntos equipo={0} puntos={vista.puntajes[0]} objetivo={vista.objetivoEtapa ?? vista.targetScore} />
@@ -57,25 +85,27 @@ export function Mesa({ vista, cliente, eventos, reconectando }: Props) {
         <div className="mano-datos">
           {vista.etapa && vista.etapa !== "UNICA" && (
             <span className={`etapa etapa-${vista.etapa.toLowerCase()}`}>
-              {vista.etapa === "MALAS" ? "Malas" : "Buenas"}
+              {vista.etapa === "MALAS" ? t("mesa_malas") : t("mesa_buenas")}
             </span>
           )}
-          <span>Mano {vista.manoNumero + 1}</span>
-          <strong className={vista.valorMano > 1 ? "dorado" : ""}>Vale {vista.valorMano}</strong>
+          <span>{t("mesa_mano", { n: vista.manoNumero + 1 })}</span>
+          <strong className={vista.valorMano > 1 ? "dorado" : ""}>
+            {t("mesa_vale", { n: vista.valorMano })}
+          </strong>
         </div>
 
         <button
           type="button"
           className="icono"
-          onClick={() => setVerHistoria((valor) => !valor)}
-          aria-label="Ver historia de la mano"
-          aria-expanded={verHistoria}
+          onClick={() => setPanel((valor) => (valor ? null : "historia"))}
+          aria-label={t("mesa_historia_aria")}
+          aria-expanded={panel !== null}
         >
           ≡
         </button>
       </header>
 
-      <section className="rivales" aria-label="Jugadores">
+      <section className="rivales" aria-label={t("mesa_aria_jugadores")}>
         {rivales.map((asiento) => (
           <Rival
             key={asiento.id}
@@ -97,11 +127,11 @@ export function Mesa({ vista, cliente, eventos, reconectando }: Props) {
         {pendiente ? (
           <div className="canto" role="status">
             <p>
-              <strong>{nombreDe(vista, pendiente.deJugador)}</strong> cantó{" "}
-              <strong className="dorado">{ETIQUETA_CANTO[pendiente.canto] ?? pendiente.canto}</strong>
+              <strong>{nombreDe(vista, pendiente.deJugador)}</strong> {t("mesa_canto_verbo")}
+              <strong className="dorado"> {nombreCanto(pendiente.canto)}</strong>
             </p>
             {vista.envido && !vista.envido.resuelto && vista.envido.valorAcumulado > 0 && (
-              <p className="detalle">Vale {vista.envido.valorAcumulado} puntos</p>
+              <p className="detalle">{t("mesa_vale_puntos", { puntos: vista.envido.valorAcumulado })}</p>
             )}
             <p className="reloj">{Math.ceil(restante / 1000)}s</p>
             {miRespondo && (
@@ -118,23 +148,32 @@ export function Mesa({ vista, cliente, eventos, reconectando }: Props) {
                         className={estiloAccion(nombre)}
                         onClick={() => cliente.accion(accion)}
                       >
-                        {ETIQUETA_ACCION[nombre] ?? nombre}
+                        {etiquetaAccion(nombre)}
                       </button>
                     );
                   })}
               </div>
             )}
-            {!miRespondo && <p className="detalle">Esperando a {nombreDe(vista, pendiente.respondedor)}…</p>}
+            {!miRespondo && (
+              <p className="detalle">{t("mesa_esperando_a", { nombre: nombreDe(vista, pendiente.respondedor) })}</p>
+            )}
+            <button type="button" className="enlace" onClick={() => setPanel("ayuda")}>
+              {t("mesa_que_es")}
+            </button>
           </div>
         ) : (
           <p className="turno">
             {textoTurno(vista)}
-            {esMiTurno && <span className="turno-yo">Tocá una carta</span>}
+            {esMiTurno && <span className="turno-yo">{t("mesa_toca_carta")}</span>}
           </p>
         )}
       </section>
 
-      <section className={`mi-mano${elegida ? " con-elegida" : ""}`} aria-label="Tu mano">
+      <section
+        key={vista.manoNumero}
+        className={`mi-mano${elegida ? " con-elegida" : ""}`}
+        aria-label={t("mesa_aria_mano")}
+      >
         {vista.miMano.map((carta) => {
           const clave = `${carta.palo}-${carta.numero}`;
           const jugable = claveJugable.has(clave) && pendiente === null;
@@ -148,15 +187,15 @@ export function Mesa({ vista, cliente, eventos, reconectando }: Props) {
             />
           );
         })}
-        {vista.miMano.length === 0 && <p className="vacio">Sin cartas</p>}
+        {vista.miMano.length === 0 && <p className="vacio">{t("mesa_sin_cartas")}</p>}
       </section>
 
       <footer className="acciones">
         {elegida ? (
-          <p className="confirmar">Tocá la misma carta otra vez para jugarla</p>
+          <p className="confirmar">{t("mesa_confirmar")}</p>
         ) : (
           <p className="quien">
-            {yo ? `${yo.nombre} · equipo ${yo.equipo === 0 ? "A" : "B"}` : ""}
+            {yo ? `${yo.nombre} · ${t("equipo", { equipo: nombreEquipo(yo.equipo) })}` : ""}
           </p>
         )}
         <div className="botones">
@@ -170,16 +209,33 @@ export function Mesa({ vista, cliente, eventos, reconectando }: Props) {
                 className={estiloAccion(nombre)}
                 onClick={() => cliente.accion(accion)}
               >
-                {ETIQUETA_ACCION[nombre] ?? nombre}
+                {etiquetaAccion(nombre)}
               </button>
             );
           })}
         </div>
       </footer>
 
+      <p className="solo-lectores" role="status" aria-live="polite">
+        {anuncio}
+      </p>
+
       {vista.fase === "FIN_PARTIDA" && <Final vista={vista} />}
-      {verHistoria && <Historia eventos={eventos} alCerrar={() => setVerHistoria(false)} />}
-      {reconectando && <div className="reconectando">Reconectando…</div>}
+      {panel && (
+        <Panel
+          cliente={cliente}
+          eventos={eventos}
+          nombres={nombres}
+          pestanaInicial={panel}
+          alCerrar={() => setPanel(null)}
+          alVerTutorial={() => {
+            setPanel(null);
+            setTutorial(true);
+          }}
+        />
+      )}
+      {tutorial && <Tutorial alCerrar={cerrarTutorial} />}
+      {reconectando && <div className="reconectando">{t("mesa_reconectando")}</div>}
     </main>
   );
 }
@@ -188,8 +244,8 @@ export function Mesa({ vista, cliente, eventos, reconectando }: Props) {
 
 function Puntos({ equipo, puntos, objetivo }: { equipo: number; puntos: number; objetivo: number }) {
   return (
-    <div className={`puntos puntos-${equipo}`} title={`Equipo ${equipo === 0 ? "A" : "B"}`}>
-      <span className="puntos-letra">{equipo === 0 ? "A" : "B"}</span>
+    <div className={`puntos puntos-${equipo}`} title={`${t("equipo", { equipo: nombreEquipo(equipo) })}`}>
+      <span className="puntos-letra">{nombreEquipo(equipo)}</span>
       <span className="puntos-num">{puntos}</span>
       <span className="puntos-obj">/{objetivo}</span>
     </div>
@@ -228,9 +284,11 @@ function Rival({
       </div>
 
       <div className="rival-datos">
-        {envido !== undefined && <span className="chip">envido {envido}</span>}
-        {asiento.ausente && <span className="chip chip-alerta">ausente</span>}
-        {!asiento.conectado && !asiento.ausente && <span className="chip chip-alerta">sin conexión</span>}
+        {envido !== undefined && <span className="chip">{t("mesa_envido_chip", { valor: envido })}</span>}
+        {asiento.ausente && <span className="chip chip-alerta">{t("mesa_ausente")}</span>}
+        {!asiento.conectado && !asiento.ausente && (
+          <span className="chip chip-alerta">{t("mesa_sin_conexion")}</span>
+        )}
       </div>
     </div>
   );
@@ -251,7 +309,11 @@ function BazaVista({ baza, nombres }: { baza: Baza; nombres: Asiento[] }) {
         {baza.jugadas.length === 0 && <span className="dorso baza-vacia" aria-hidden="true" />}
       </div>
       <span className="baza-pie">
-        {baza.parda ? "parda" : ganador ? `gana ${ganador}` : "en juego"}
+        {baza.parda
+          ? t("mesa_parda")
+          : ganador
+            ? t("mesa_gana", { nombre: ganador })
+            : t("mesa_en_juego")}
       </span>
     </div>
   );
@@ -263,16 +325,16 @@ function Final({ vista }: { vista: Vista }) {
   const gane = gano !== null && gano === miEquipo;
 
   return (
-    <div className="final" role="dialog" aria-modal="true">
-      <div className="tarjeta">
-        <p className="dorado">{gane ? "¡Ganaron!" : `Ganó el equipo ${gano === 0 ? "A" : "B"}`}</p>
+    <div className="final">
+      <div className="tarjeta" role="dialog" aria-modal="true" aria-label={t("mesa_fin_partida")}>
+        <p className="dorado">{gane ? t("mesa_ganaron") : t("mesa_gano_equipo", { equipo: nombreEquipo(gano) })}</p>
         <h2>
           {vista.puntajes[0]} a {vista.puntajes[1]}
         </h2>
-        <p className="detalle">La mesa vuelve al lobby en unos segundos para la revancha.</p>
+        <p className="detalle">{t("mesa_vuelve_lobby")}</p>
         {vista.puntajesMalas && vista.puntajesMalas.length === 2 && (
           <p className="detalle">
-            Malas: {vista.puntajesMalas[0]} a {vista.puntajesMalas[1]}
+            {t("mesa_malas_puntajes", { a: vista.puntajesMalas[0]!, b: vista.puntajesMalas[1]! })}
           </p>
         )}
       </div>
@@ -280,29 +342,10 @@ function Final({ vista }: { vista: Vista }) {
   );
 }
 
-function Historia({ eventos, alCerrar }: { eventos: Evento[]; alCerrar: () => void }) {
-  return (
-    <aside className="historia" aria-label="Historia de la mano">
-      <header>
-        <h3>Lo que pasó</h3>
-        <button type="button" className="icono" onClick={alCerrar} aria-label="Cerrar historia">
-          ×
-        </button>
-      </header>
-      <ol>
-        {eventos.map((evento, indice) => (
-          <li key={`${evento.tipo}-${indice}`}>{evento.texto}</li>
-        ))}
-        {eventos.length === 0 && <li className="detalle">Todavía no pasó nada.</li>}
-      </ol>
-    </aside>
-  );
-}
-
 // ---------------------------------------------------------------- helpers
 
 function nombreDe(vista: Vista, jugador: number): string {
-  return vista.asientos[jugador]?.nombre ?? `Jugador ${jugador + 1}`;
+  return vista.asientos[jugador]?.nombre ?? t("jugador_n", { n: jugador + 1 });
 }
 
 function textoTurno(vista: Vista): string {
@@ -310,17 +353,19 @@ function textoTurno(vista: Vista): string {
     case "MANO_CERRADA": {
       const equipo = vista.manoGanadaPor;
       return equipo === null
-        ? "Mano cerrada"
-        : `Mano para el equipo ${equipo === 0 ? "A" : "B"}: ${vista.puntajes[equipo]} puntos`;
+        ? t("mesa_mano_cerrada")
+        : t("mesa_mano_para", { equipo: nombreEquipo(equipo), puntos: vista.puntajes[equipo] });
     }
     case "FIN_PARTIDA":
-      return "Partida terminada";
+      return t("mesa_fin_partida");
     case "FLOR":
-      return "Manos con flor";
+      return t("mesa_manos_con_flor");
     case "JUEGO":
-      return vista.turno === vista.miJugadorId ? "Tu turno" : `Juega ${nombreDe(vista, vista.turno)}`;
+      return vista.turno === vista.miJugadorId
+        ? t("mesa_tu_turno")
+        : t("mesa_juega", { nombre: nombreDe(vista, vista.turno) });
     default:
-      return "Esperando…";
+      return t("mesa_esperando");
   }
 }
 
@@ -349,4 +394,74 @@ function useRestante(deadlineMs: number | undefined): number {
   }, [deadlineMs]);
 
   return restante;
+}
+
+/** Sonidos y vibración de los eventos nuevos (los que ya estaban al entrar no suenan). */
+function useSonidosDeEventos(eventos: Evento[]): void {
+  const ultimo = useRef<Evento | null>(null);
+  const arrancado = useRef(false);
+
+  useEffect(() => {
+    if (!arrancado.current) {
+      arrancado.current = true;
+      ultimo.current = eventos[0] ?? null;
+      return;
+    }
+    const nuevos: Evento[] = [];
+    for (const evento of eventos) {
+      if (evento === ultimo.current) break;
+      nuevos.push(evento);
+    }
+    if (eventos.length > 0) ultimo.current = eventos[0]!;
+
+    for (const evento of nuevos.reverse()) {
+      switch (evento.tipo) {
+        case "REPARTO":
+          sonar("reparto");
+          break;
+        case "CARTA_JUGADA":
+          sonar("carta");
+          vibrar(8);
+          break;
+        case "CANTO":
+          sonar("canto");
+          vibrar([15, 30, 15]);
+          break;
+        case "BAZA_RESUELTA":
+          sonar("carta");
+          break;
+        case "ENVIDO_RESUELTO":
+        case "TRUCO_RESUELTO":
+        case "FLOR_RESUELTA":
+        case "MANO_GANADA":
+        case "FIN_DE_MALAS":
+          sonar("punto");
+          break;
+        case "PARTIDA_GANADA":
+          sonar("fin");
+          break;
+        default:
+          break;
+      }
+    }
+  }, [eventos]);
+}
+
+/** Un toque de atención cuando pasa a ser tu turno (no al recargar la página). */
+function useAvisoDeTurno(esMiTurno: boolean): void {
+  const anterior = useRef(esMiTurno);
+  const arrancado = useRef(false);
+
+  useEffect(() => {
+    if (!arrancado.current) {
+      arrancado.current = true;
+      anterior.current = esMiTurno;
+      return;
+    }
+    if (esMiTurno && !anterior.current) {
+      sonar("turno");
+      vibrar(14);
+    }
+    anterior.current = esMiTurno;
+  }, [esMiTurno]);
 }

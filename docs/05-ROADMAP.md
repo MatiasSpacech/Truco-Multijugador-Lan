@@ -149,13 +149,41 @@ sin corromper el estado.
   la mesa) y la partida sigue sola. `rejoin` limpia la marca y devuelve el control.
 - El servidor de desarrollo acepta `TRUCO_OBJETIVO=30` y `TRUCO_FLOR=true` para probar variantes.
 
-**Pendiente para Fase 6**: sonidos, animaciones de reparto, accesibilidad, i18n y el tutorial.
+**Resuelto en Fase 6**: sonidos, animaciones de reparto, accesibilidad, i18n y el tutorial.
 
-## Fase 6 — Pulido (3–4 sesiones)
-- Accesibilidad (tamaños táctiles ≥ 44 px, contraste, `prefers-reduced-motion`), i18n es/en.
-- Tutorial de 3 pasos y ayuda de reglas desde la mesa.
-- Sonidos, vibración, tema claro/oscuro.
-- Log de diagnóstico exportable (texto) para depurar redes raras.
+## Fase 6 — Pulido ✅ (hecho)
+`cd web && npm test` → **15 tests**; `e2e → 3 tests verdes` en Chromium real.
+
+- **i18n es/en sin librería**: diccionario tipado (`i18n.ts`); si falta una clave o un parámetro en
+  inglés, falla el build o el test de paridad. El idioma se detecta del sistema (inglés si el
+  navegador está en inglés, español para el resto) y se cambia desde Ajustes.
+- **Historia de la mano traducida**: el servidor ahora manda los datos estructurados del evento
+  (`valores`, `parda`, `quiero`, `aceptado`, `porRechazo`, `valorMano`, `puntajes`…), así que el
+  cliente arma el texto en el idioma elegido y usa `texto` (español) solo como fallback.
+- **Tutorial de 3 pasos** la primera vez que alguien se sienta a la mesa (cartas, cantos, “el resto
+  es automático”), con Saltear, Atrás/Siguiente y recordado por dispositivo. Se puede repetir desde
+  Ajustes.
+- **Ayuda de reglas desde la mesa**: una sola hoja inferior con tres pestañas (Lo que pasó / Ayuda /
+  Ajustes) para no meter tres iconos en 360 px; atajo “¿Qué es esto?” en el panel de cantos.
+- **Sonido y vibración sin assets**: todo sintetizado con WebAudio (reparto, carta, canto, punto,
+  final, tu turno) y `navigator.vibrate`. Se apagan por separado; el audio se desbloquea con el
+  primer toque (política de autoplay de los navegadores).
+- **Tema claro/oscuro/automático** con variables CSS (`data-tema`), respetando
+  `prefers-color-scheme` en automático y actualizando `theme-color`. Se aplica antes del primer
+  render (sin parpadeo) y se guarda en `localStorage`.
+- **Accesibilidad**: todo control tocable ≥ 44×44 px, anillo de foco visible, foco atrapado y Escape
+  en hojas/diálogos, `aria-live` que anuncia turno y cantos, `aria-expanded`/`role=tab`, contraste
+  corregido (opacidades y paleta del tema claro) y `prefers-reduced-motion` que apaga animaciones.
+- **Animaciones**: reparto escalonado por mano, carta jugada, canto y hoja. Con movimiento reducido
+  no se anima nada.
+- **Log de diagnóstico exportable**: buffer de 250 mensajes (WebSocket ida/vuelta, reconexiones,
+  errores globales) + contexto de sesión (sala, fase, `seq`, socket, idioma, tema, red, UA). Se
+  descarga como `truco-diagnostico-AAAAMMDD-HHMM.txt` o se copia al portapapeles.
+- **E2E aislado por test**: cada caso levanta su propio servidor en un puerto libre (la sala es única
+  por proceso: compartir servidor hacía que el segundo test entrara a una partida ya empezada).
+
+**Pendiente de esta fase**: revisar los textos en inglés con un hablante nativo y probar el sonido en
+un iPhone real (Safari exige el gesto y no soporta `navigator.vibrate`).
 
 ## Fase 7 — Release (2 sesiones)
 - Firma, `assembleRelease`, R8 con reglas para Ktor/kotlinx.serialization.
@@ -169,8 +197,8 @@ sin corromper el estado.
 |-------|-------------|-----------|
 | Motor | JUnit5 + kotest property | Reglas, casos de mesa, invariantes en 5.000 partidas |
 | Servidor | Ktor `testApplication` + `TestCoroutineScheduler` | Protocolo, filtrado de información, timeouts |
-| Cliente | Vitest | Reducer/store, parseo de estados, reconexión |
-| E2E | Playwright (2/4/6 contextos headless) | Flujo real: unirse, jugar mano, cantar, perder conexión |
+| Cliente | Vitest | i18n (paridad es/en), historia traducida, diagnóstico, preferencias |
+| E2E | Playwright (2/4/6 contextos headless) | Flujo real: unirse, jugar mano, cantar, tutorial, tema/idioma, log |
 | Manual | 2–3 teléfonos + router + hotspot | Lo que ningún test automático ve |
 
 Regla: el **filtrado de información** (nadie ve cartas ajenas) es un test, no una revisión de código.
@@ -190,9 +218,10 @@ TrucoArgentino/
 ├─ server/                   Ktor: /api/info, /ws, estáticos ✅ (Fase 2)
 ├─ app/                      Android (Compose + Service + WebView) ✅ (Fase 4)
 │  └─ build/generated/cliente-web/web/   build del cliente (generado)
-├─ web/                      React + TS + Vite ✅ (Fase 3)
-│  ├─ src/{net,store,ui,rules-types}
-│  └─ package.json
+├─ web/                      React + TS + Vite ✅ (Fase 3 y 6)
+│  ├─ src/{net,ui}           pantallas y cliente WS
+│  ├─ src/{i18n,preferencias,sonido,diagnostico}.ts   pulido
+│  └─ package.json           (npm test → Vitest)
 └─ e2e/                      Playwright ✅ (Fase 3)
 ```
 

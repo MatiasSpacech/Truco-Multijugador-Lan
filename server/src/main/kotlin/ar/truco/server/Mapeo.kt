@@ -195,6 +195,7 @@ fun aEventoDto(evento: Evento, nombres: List<String>): EventoDto {
         is Evento.Reparto -> EventoDto(
             tipo = "REPARTO",
             texto = "Se repartió la mano ${evento.manoNumero + 1}",
+            manoNumero = evento.manoNumero,
         )
 
         is Evento.CartaJugada -> EventoDto(
@@ -214,6 +215,7 @@ fun aEventoDto(evento: Evento, nombres: List<String>): EventoDto {
             },
             jugador = evento.ganador,
             baza = evento.baza,
+            parda = evento.parda,
         )
 
         is Evento.CantoHecho -> EventoDto(
@@ -227,6 +229,7 @@ fun aEventoDto(evento: Evento, nombres: List<String>): EventoDto {
             tipo = "RESPUESTA",
             texto = "${nombre(evento.jugador)} dijo ${if (evento.quiero) "quiero" else "no quiero"}",
             jugador = evento.jugador,
+            quiero = evento.quiero,
         )
 
         is Evento.EnvidoResuelto -> EventoDto(
@@ -239,6 +242,8 @@ fun aEventoDto(evento: Evento, nombres: List<String>): EventoDto {
             },
             puntos = evento.puntos,
             equipo = evento.ganadorEquipo,
+            valores = evento.valores,
+            porRechazo = evento.porRechazo,
         )
 
         is Evento.TrucoResuelto -> EventoDto(
@@ -250,6 +255,8 @@ fun aEventoDto(evento: Evento, nombres: List<String>): EventoDto {
             },
             canto = evento.canto.name,
             puntos = evento.puntos,
+            aceptado = evento.aceptado,
+            valorMano = evento.valorMano,
         )
 
         is Evento.FlorResuelta -> EventoDto(
@@ -258,6 +265,7 @@ fun aEventoDto(evento: Evento, nombres: List<String>): EventoDto {
                 "(${evento.valores.joinToString(" / ")})",
             puntos = evento.puntos,
             equipo = evento.ganadorEquipo,
+            valores = evento.valores,
         )
 
         is Evento.FinDeMalas -> EventoDto(
@@ -265,6 +273,7 @@ fun aEventoDto(evento: Evento, nombres: List<String>): EventoDto {
             texto = "El equipo ${evento.equipo + 1} ganó las malas " +
                 "(${evento.puntajes.joinToString("-")}). Ahora van las buenas, desde cero.",
             equipo = evento.equipo,
+            puntajes = evento.puntajes,
         )
 
         is Evento.ManoGanada -> EventoDto(
@@ -272,6 +281,7 @@ fun aEventoDto(evento: Evento, nombres: List<String>): EventoDto {
             texto = "El equipo ${evento.equipo + 1} ganó la mano: ${evento.puntos} punto(s)",
             puntos = evento.puntos,
             equipo = evento.equipo,
+            manoNumero = evento.manoNumero,
         )
 
         is Evento.PartidaGanada -> EventoDto(

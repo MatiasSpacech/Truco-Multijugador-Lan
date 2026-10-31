@@ -1,6 +1,6 @@
-import { NOMBRE_PALO } from "../net/cliente";
+import { nombreCarta, nombreFigura, usarIdioma } from "../i18n";
 import type { Carta as CartaDto } from "../tipos";
-import { FIGURA, IconoPalo } from "./Palos";
+import { IconoPalo } from "./Palos";
 
 interface Props {
   carta: CartaDto;
@@ -11,6 +11,7 @@ interface Props {
 }
 
 export function Carta({ carta, jugable = false, elegida = false, chica = false, onClick }: Props) {
+  usarIdioma();
   const clases = [
     "carta",
     `palo-${carta.palo.toLowerCase()}`,
@@ -21,7 +22,7 @@ export function Carta({ carta, jugable = false, elegida = false, chica = false, 
     .filter(Boolean)
     .join(" ");
 
-  const figura = FIGURA[carta.numero];
+  const figura = nombreFigura(carta.numero);
 
   return (
     <button
@@ -29,7 +30,7 @@ export function Carta({ carta, jugable = false, elegida = false, chica = false, 
       className={clases}
       onClick={onClick}
       disabled={!jugable}
-      aria-label={`${carta.numero} de ${NOMBRE_PALO[carta.palo]}`}
+      aria-label={nombreCarta(carta)}
     >
       <span className="carta-numero">{carta.numero}</span>
       <span className="carta-palo">

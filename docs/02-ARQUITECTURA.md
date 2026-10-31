@@ -112,6 +112,10 @@ Verificado en emulador (API 37): pantalla apagada 45 s con el servidor respondie
 ## 7. Estrategia de datos
 
 - Estado de partida **en memoria** (es efímero, dura una partida).
-- `RulesConfig` y preferencias (nombre, sonido, tema) en **DataStore**.
+- `RulesConfig` y preferencias de la app (jugadores, objetivo, flor) en **DataStore** (Android).
+- Preferencias del cliente web (idioma, tema, sonido, vibración, tutorial visto) en `localStorage`
+  (`truco.prefs`), junto al nombre y al token de silla.
+- Log de diagnóstico **en memoria** (250 mensajes, se pisa) y exportable a texto desde Ajustes:
+  no se persiste, no se envía a ningún lado y sirve para depurar la red local.
 - No hay base de datos, no hay telemetría, no hay red externa. Cero permisos de contactos/ubicación
   (ojo: el SSID puede requerir ubicación en versiones viejas → solo si se usa hotspot en API < 33).

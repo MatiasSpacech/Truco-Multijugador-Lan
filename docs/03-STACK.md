@@ -77,6 +77,19 @@ seguro. El QR + `localStorage` cubren el caso de uso.
 sigue siendo necesario para que el servidor sobreviva con la pantalla apagada, pero su tipo se elige
 según lo que acepte el dispositivo (`specialUse` como fallback), sin auditoría externa.
 
+### D-09 — Sonido sintetizado con WebAudio (sin archivos) ✅
+**Decisión:** los sonidos (reparto, carta, canto, punto, final) se generan con osciladores y ruido
+filtrado en el cliente; la vibración usa `navigator.vibrate`. Cero assets, cero licencias, nada que
+descargar por la LAN y ~0 KB de bundle. Se desbloquea con el primer gesto (autoplay) y se apaga
+desde Ajustes. Descartado: MP3/OGG (peso, licencias, precarga por Wi-Fi).
+
+### D-10 — i18n propio con diccionario tipado ✅
+**Decisión:** dos diccionarios (`es`, `en`) en `web/src/i18n.ts`, sin librería: ~150 claves no
+justifican i18next. El tipado obliga a que `en` tenga todas las claves y un test compara además los
+`{parámetros}` de cada texto. Los eventos del servidor se traducen con sus campos estructurados y
+`texto` (español) queda como fallback si falta un dato. Descartado: react-intl/i18next (peso,
+plataformas de traducción, formatos que no necesitamos).
+
 ## 3. Alternativas descartadas (y por qué)
 
 | Opción | Veredicto |

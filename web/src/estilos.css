@@ -1,4 +1,5 @@
 :root {
+  /* Tema oscuro: la mesa de noche. */
   --verde: #0f2a20;
   --verde-2: #173a2c;
   --fieltro: #1d4a36;
@@ -6,8 +7,37 @@
   --dorado: #d9b36a;
   --rojo: #c8553d;
   --azul: #5b8fb9;
-  --sombra: 0 10px 30px rgba(0, 0, 0, 0.35);
   --radio: 14px;
+
+  /* Tintas para los rgba() que antes estaban hardcodeados: el tema claro cambia
+     un solo juego de variables y no hay que tocar cada regla. Se usa
+     `rgba(var(--x), a)` (comas) porque los WebView viejos no entienden `rgb(r g b / a)`. */
+  --tinta-rgb: 244, 236, 216;
+  --sombra-rgb: 0, 0, 0;
+  --brillo-rgb: 255, 255, 255;
+  --fondo: radial-gradient(circle at 50% 15%, var(--fieltro), var(--verde) 70%);
+  --sombra: 0 10px 30px rgba(0, 0, 0, 0.35);
+  /* Superficies: en oscuro son negro translúcido, en claro blanco translúcido. */
+  --panel: rgba(var(--sombra-rgb), 0.22);
+  --panel-fuerte: rgba(var(--sombra-rgb), 0.45);
+}
+
+/* Tema claro: la misma mesa, de día. El dorado y el rojo se oscurecen para
+   mantener el contraste sobre el fondo crema. */
+[data-tema="claro"] {
+  --verde: #e6dabd;
+  --verde-2: #f4edda;
+  --fieltro: #f8f2e2;
+  --crema: #241d10;
+  --dorado: #7d5a12;
+  --rojo: #9c2a1c;
+  --azul: #2f5f86;
+  --tinta-rgb: 36, 29, 16;
+  --sombra-rgb: 120, 96, 50;
+  --brillo-rgb: 255, 255, 255;
+  --sombra: 0 10px 30px rgba(90, 70, 30, 0.22);
+  --panel: rgba(255, 255, 255, 0.6);
+  --panel-fuerte: rgba(255, 255, 255, 0.88);
 }
 
 * {
@@ -28,7 +58,7 @@ body {
 }
 
 body {
-  background: radial-gradient(circle at 50% 15%, var(--fieltro), var(--verde) 70%);
+  background: var(--fondo);
   color: var(--crema);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-tap-highlight-color: transparent;
@@ -39,6 +69,15 @@ button {
   font: inherit;
   color: inherit;
   cursor: pointer;
+  /* Accesibilidad: todo control tocable mide al menos 44x44 px. */
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Anillo de foco visible también en el navegador de un teléfono con teclado. */
+:focus-visible {
+  outline: 2px solid var(--dorado);
+  outline-offset: 2px;
 }
 
 .dorado {
@@ -67,8 +106,8 @@ button {
 }
 
 .tarjeta {
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(244, 236, 216, 0.14);
+  background: var(--panel);
+  border: 1px solid rgba(var(--tinta-rgb), 0.14);
   border-radius: 18px;
   padding: 22px;
   width: min(400px, 100%);
@@ -98,8 +137,8 @@ button {
 input {
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1px solid rgba(244, 236, 216, 0.25);
-  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(var(--tinta-rgb), 0.25);
+  background: rgba(var(--sombra-rgb), 0.25);
   color: var(--crema);
   font-size: 16px;
 }
@@ -121,7 +160,7 @@ input:focus-visible {
 .pie {
   margin: 4px 0 0;
   font-size: 12px;
-  opacity: 0.68;
+  opacity: 0.8;
 }
 
 .detalle {
@@ -162,12 +201,12 @@ input:focus-visible {
 
 .secundario {
   background: transparent;
-  border: 1px solid rgba(244, 236, 216, 0.4);
+  border: 1px solid rgba(var(--tinta-rgb), 0.4);
 }
 
 .neutro {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--panel);
+  border: 1px solid rgba(var(--tinta-rgb), 0.18);
   padding: 8px 12px;
 }
 
@@ -185,14 +224,15 @@ input:focus-visible {
 
 .icono {
   background: transparent;
-  border: 1px solid rgba(244, 236, 216, 0.25);
+  border: 1px solid rgba(var(--tinta-rgb), 0.25);
   border-radius: 10px;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   font-size: 20px;
   line-height: 1;
   display: grid;
   place-items: center;
+  flex: none;
 }
 
 /* ------------------------------------------------------------------ lobby */
@@ -234,7 +274,7 @@ input:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(0, 0, 0, 0.22);
+  background: var(--panel);
   border: 1px solid transparent;
   border-radius: 12px;
   padding: 10px 12px;
@@ -248,7 +288,7 @@ input:focus-visible {
 .asientos li.libre {
   opacity: 0.55;
   border-style: dashed;
-  border-color: rgba(244, 236, 216, 0.25);
+  border-color: rgba(var(--tinta-rgb), 0.25);
 }
 
 .asientos li em {
@@ -289,7 +329,7 @@ input:focus-visible {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  opacity: 0.6;
+  opacity: 0.78;
 }
 
 .insignia.ok {
@@ -328,8 +368,8 @@ input:focus-visible {
   gap: 3px;
   padding: 3px 9px;
   border-radius: 9px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(244, 236, 216, 0.12);
+  background: var(--panel);
+  border: 1px solid rgba(var(--tinta-rgb), 0.12);
   font-size: 12px;
 }
 
@@ -353,7 +393,7 @@ input:focus-visible {
 }
 
 .puntos-obj {
-  opacity: 0.5;
+  opacity: 0.7;
   font-size: 11px;
 }
 
@@ -388,9 +428,9 @@ input:focus-visible {
   min-width: 104px;
   padding: 6px 8px;
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.22);
+  background: var(--panel);
   border: 1px solid transparent;
-  border-left: 3px solid rgba(244, 236, 216, 0.25);
+  border-left: 3px solid rgba(var(--tinta-rgb), 0.25);
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -413,7 +453,7 @@ input:focus-visible {
 }
 
 .rival.desconectado {
-  opacity: 0.55;
+  opacity: 0.68;
 }
 
 .rival-nombre {
@@ -475,7 +515,7 @@ input:focus-visible {
   width: min(90%, 430px);
   aspect-ratio: 1.5;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.055), transparent 72%);
+  background: radial-gradient(closest-side, rgba(var(--brillo-rgb), 0.055), transparent 72%);
   box-shadow: inset 0 0 0 1px rgba(217, 179, 106, 0.09);
   pointer-events: none;
 }
@@ -510,11 +550,15 @@ input:focus-visible {
   rotate: -6deg;
 }
 
+.baza-cartas .carta {
+  animation: carta-llega 0.22s ease-out;
+}
+
 .baza-pie {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  opacity: 0.6;
+  opacity: 0.75;
 }
 
 .baza.parda .baza-pie {
@@ -546,7 +590,7 @@ input:focus-visible {
   width: min(360px, 100%);
   padding: 12px;
   border-radius: var(--radio);
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--panel-fuerte);
   border: 1px solid var(--dorado);
   display: flex;
   flex-direction: column;
@@ -591,6 +635,16 @@ input:focus-visible {
 .mi-mano .carta {
   width: clamp(62px, 17.5vw, 78px);
   height: clamp(90px, 26vw, 114px);
+  /* Reparto: la mano se re-monta por manoNumero (key) y las cartas entran escalonadas. */
+  animation: repartir 0.3s ease-out backwards;
+}
+
+.mi-mano .carta:nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+.mi-mano .carta:nth-child(3) {
+  animation-delay: 0.12s;
 }
 
 .acciones {
@@ -617,7 +671,7 @@ input:focus-visible {
 .quien {
   margin: 0;
   font-size: 11px;
-  opacity: 0.55;
+  opacity: 0.72;
 }
 
 /* ------------------------------------------------------------------ cartas */
@@ -634,7 +688,7 @@ input:focus-visible {
   align-items: center;
   justify-content: center;
   padding: 0;
-  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 3px 9px rgba(var(--sombra-rgb), 0.4);
   transition: transform 0.14s ease, box-shadow 0.14s ease;
   flex: none;
   overflow: hidden;
@@ -731,12 +785,12 @@ input:focus-visible {
 }
 
 .carta.jugable {
-  box-shadow: 0 0 0 1px var(--dorado), 0 6px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 1px var(--dorado), 0 6px 16px rgba(var(--sombra-rgb), 0.4);
 }
 
 .carta.elegida {
   transform: translateY(-14px);
-  box-shadow: 0 0 0 2px var(--dorado), 0 10px 22px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 2px var(--dorado), 0 10px 22px rgba(var(--sombra-rgb), 0.5);
 }
 
 @media (hover: hover) {
@@ -760,45 +814,236 @@ input:focus-visible {
   height: 66px;
   border-radius: 6px;
   background: repeating-linear-gradient(45deg, #2c5f47, #2c5f47 4px, #24503c 4px, #24503c 8px);
-  border: 1px solid rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(var(--sombra-rgb), 0.45);
   box-shadow: inset 0 0 0 2px rgba(217, 179, 106, 0.22);
   flex: none;
 }
 
-.historia {
+/* ------------------------------------------------------------------ hoja: historia, ayuda y ajustes */
+
+.velo {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  max-height: 55dvh;
-  overflow: auto;
-  background: #10241b;
-  border-top: 1px solid rgba(217, 179, 106, 0.4);
-  border-radius: 16px 16px 0 0;
-  padding: 12px 14px calc(env(safe-area-inset-bottom) + 14px);
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(var(--sombra-rgb), 0.6);
+  animation: aparecer 0.15s ease-out;
+}
+
+.hoja {
+  width: min(520px, 100%);
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--verde-2);
+  border: 1px solid rgba(217, 179, 106, 0.35);
+  border-bottom: 0;
+  border-radius: 18px 18px 0 0;
   box-shadow: var(--sombra);
+  padding: 10px 14px calc(env(safe-area-inset-bottom) + 14px);
   animation: subir 0.2s ease-out;
 }
 
-.historia header {
+.hoja-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid rgba(var(--tinta-rgb), 0.12);
+  padding-bottom: 8px;
 }
 
-.historia h3 {
+.pestanas {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+.pestana {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+.pestana.activa {
+  background: rgba(217, 179, 106, 0.16);
+  border-color: rgba(217, 179, 106, 0.5);
+  color: var(--dorado);
+  opacity: 1;
+}
+
+.hoja-cuerpo {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-top: 10px;
+}
+
+.historia-lista {
   margin: 0;
-  font-size: 15px;
-}
-
-.historia ol {
-  margin: 8px 0 0;
   padding-left: 18px;
   display: flex;
   flex-direction: column;
   gap: 6px;
   font-size: 13px;
-  opacity: 0.9;
+}
+
+.historia-lista li::marker {
+  color: var(--dorado);
+}
+
+.ayuda,
+.ajustes {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 14px;
+}
+
+.ayuda section,
+.ajustes section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ayuda h4,
+.ajustes h4 {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dorado);
+}
+
+.ayuda p,
+.ajustes p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.ajustes .fila {
+  justify-content: flex-start;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.segmentado {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.opcion {
+  background: var(--panel);
+  border: 1px solid rgba(var(--tinta-rgb), 0.18);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.opcion.activa {
+  background: rgba(217, 179, 106, 0.2);
+  border-color: var(--dorado);
+  color: var(--dorado);
+}
+
+.chico {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.enlace {
+  background: none;
+  border: 0;
+  padding: 0 4px;
+  font-size: 12px;
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+/* ------------------------------------------------------------------ tutorial */
+
+.tutorial {
+  width: min(420px, calc(100% - 24px));
+  margin-bottom: 12px;
+  align-items: center;
+  text-align: center;
+  background: var(--verde-2);
+  border: 1px solid rgba(217, 179, 106, 0.45);
+}
+
+.tutorial h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.tutorial-paso {
+  margin: 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.75;
+}
+
+.tutorial-texto {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  opacity: 0.92;
+}
+
+.tutorial-icono {
+  width: 64px;
+  height: 48px;
+  color: var(--dorado);
+}
+
+.puntos-paso {
+  display: flex;
+  gap: 6px;
+}
+
+.punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(var(--tinta-rgb), 0.3);
+}
+
+.punto.activo {
+  background: var(--dorado);
+}
+
+/* Región viva para lectores de pantalla: se anuncia el turno y los cantos. */
+.solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .final {
@@ -807,7 +1052,7 @@ input:focus-visible {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(6, 18, 13, 0.72);
+  background: rgba(var(--sombra-rgb), 0.72);
   backdrop-filter: blur(3px);
   animation: aparecer 0.2s ease-out;
 }
@@ -834,7 +1079,7 @@ input:focus-visible {
   transform: translate(-50%, -50%);
   padding: 10px 16px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.72);
+  background: rgba(var(--sombra-rgb), 0.72);
   font-size: 13px;
   pointer-events: none;
 }
@@ -843,6 +1088,28 @@ input:focus-visible {
   from {
     opacity: 0;
     transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes repartir {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes carta-llega {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.9);
   }
   to {
     opacity: 1;

@@ -1,10 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const PUERTO = 8123;
-
 /**
- * Levanta el servidor Kotlin real (dist de :server) sirviendo el cliente compilado
- * de `web/dist`. Requiere haber corrido antes:
+ * Cada test levanta su propio servidor Kotlin en un puerto libre (ver `tests/fixtures.ts`),
+ * así cada caso juega en una sala limpia. Requiere haber corrido antes:
  *   ./gradlew :server:installDist
  *   cd web && npm run build
  */
@@ -15,14 +13,13 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"]],
   use: {
-    baseURL: `http://127.0.0.1:${PUERTO}`,
     trace: "retain-on-failure",
+    // El juego es en español por defecto; sin esto Chromium arranca en en-US y
+    // el cliente detecta inglés (los tests buscan textos en español).
+    locale: "es-AR",
+    // El tema "auto" sigue al sistema: fijamos oscuro para que el arranque sea el
+    // de la mesa de noche (el claro se prueba explícitamente en pulido.spec).
+    colorScheme: "dark",
   },
   projects: [{ name: "chromium", use: { ...devices["Pixel 7"] } }],
-  webServer: {
-    command: "node scripts/servidor.mjs",
-    url: `http://127.0.0.1:${PUERTO}/api/info`,
-    reuseExistingServer: false,
-    timeout: 90_000,
-  },
 });
