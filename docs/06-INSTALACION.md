@@ -10,6 +10,11 @@ desde el navegador del teléfono: no instalan nada, no hace falta internet ni cu
 └──────────────┘                     └───────────────┘
 ```
 
+## 0. Descargar
+
+**[⬇️ truco-argentino-1.0.0.apk](https://github.com/MatiasSpacech/Truco-Multijugador-Lan/releases/latest/download/truco-argentino-1.0.0.apk)**
+· Android 8+ · 2,2 MB · todas las versiones en [Releases](https://github.com/MatiasSpacech/Truco-Multijugador-Lan/releases).
+
 ## 1. Requisitos
 
 - **Teléfono anfitrión**: Android 8.0 o superior (API 26+). La app pesa ~2,2 MB.
@@ -19,8 +24,8 @@ desde el navegador del teléfono: no instalan nada, no hace falta internet ni cu
 
 ## 2. Instalar el APK
 
-1. Pasá el archivo `app-release.apk` al teléfono (cable, Bluetooth, Telegram, lo que sea) o
-   descargalo desde donde lo compartas.
+1. Descargá el APK desde el link de arriba (o pasalo al teléfono por cable, Bluetooth, Telegram, lo
+   que sea). El archivo se llama `truco-argentino-1.0.0.apk`.
 2. Abrilo desde el explorador de archivos. Android va a pedir permiso para **instalar apps
    desconocidas** para esa app (Archivos / Chrome): aceptá una vez.
 3. Si Play Protect muestra un aviso por ser una app fuera de la tienda, elegí “Instalar de todos
