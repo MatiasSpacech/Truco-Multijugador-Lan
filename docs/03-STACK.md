@@ -90,6 +90,13 @@ justifican i18next. El tipado obliga a que `en` tenga todas las claves y un test
 `texto` (español) queda como fallback si falta un dato. Descartado: react-intl/i18next (peso,
 plataformas de traducción, formatos que no necesitamos).
 
+### D-11 — Firma local y R8 verificado, sin Play Store ✅
+**Decisión:** el APK se firma con un keystore local (`keystore.properties`, ignorado por git) y R8
+queda activado con reglas explícitas para kotlinx.serialization y Ktor. El release se valida con una
+partida real (3 navegadores + el WebView del anfitrión) porque el modo de falla de R8 acá es
+silencioso: el servidor arranca y responde HTTP, pero el WebSocket deja de serializar. No se genera
+AAB (D-08) ni se usa Play App Signing.
+
 ## 3. Alternativas descartadas (y por qué)
 
 | Opción | Veredicto |

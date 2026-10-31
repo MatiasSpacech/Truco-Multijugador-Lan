@@ -4,6 +4,8 @@ build/
 local.properties
 *.apk
 *.aab
+keystore.properties
+!keystore.properties.example
 *.jks
 *.keystore
 captures/
@@ -34,8 +36,9 @@ playwright-report/
 Thumbs.db
 desktop.ini
 
-# --- e2e temporales ---
-e2e/.tmp/
+# --- temporales ---
+.tmp/
+**/.tmp/
 
 # --- Android app ---
 app/build/

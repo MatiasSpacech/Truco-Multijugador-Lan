@@ -26,7 +26,7 @@ import java.io.File
 data class ServerConfig(
     val rules: RulesConfig = RulesConfig(),
     val codigo: String = "TRUCO",
-    val serverVersion: String = "0.4.0",
+    val serverVersion: String = "1.0.0",
     val assetsDir: File? = null,
     val pausaEntreManosMs: Long = 4_000,
     val pausaFinalMs: Long = 20_000,

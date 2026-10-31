@@ -23,6 +23,15 @@ dentro del teléfono; los demás jugadores se conectan **desde el navegador** de
 | [docs/03-STACK.md](docs/03-STACK.md) | Tecnologías recomendadas, alternativas y ADRs |
 | [docs/04-PROTOCOLO.md](docs/04-PROTOCOLO.md) | Mensajes WebSocket, secuencias, errores |
 | [docs/05-ROADMAP.md](docs/05-ROADMAP.md) | Fases, entregables y criterios de aceptación |
+| [docs/06-INSTALACION.md](docs/06-INSTALACION.md) | Instalar el APK, crear la mesa, problemas comunes |
+| [CHANGELOG.md](CHANGELOG.md) | Qué trae la 1.0.0 |
+
+## Instalar y jugar
+
+El APK de release está en `app/build/outputs/apk/release/app-release.apk` (firmado, ~2,2 MB, Android 8+).
+Se pasa al teléfono anfitrión, se instala habilitando "instalar apps desconocidas" y listo: los demás
+entran desde el navegador con el QR. Paso a paso, permisos y problemas comunes:
+[docs/06-INSTALACION.md](docs/06-INSTALACION.md).
 
 ## Decisiones tomadas
 
@@ -74,7 +83,7 @@ dentro del teléfono; los demás jugadores se conectan **desde el navegador** de
 - [x] Fase 4 — App Android: servicio en primer plano, QR, hotspot, WebView
 - [x] Fase 5 — Contraflor, malas y buenas a 30, abandono fino
 - [x] Fase 6 — Pulido: i18n es/en, tutorial, ayuda, sonido, tema claro/oscuro, a11y, log
-- [ ] Fase 7 — Release (APK firmada)
+- [x] Fase 7 — Release: APK firmada (v2), R8, guía de instalación y changelog
 
 ## Cómo correr lo que hay hoy
 
@@ -84,16 +93,22 @@ Requisitos: JDK 17+ (probado con 21), Node 20+ (probado con 24) y Android SDK co
 # 1) Cliente web (una vez, o cuando cambies el front)
 cd web && npm install && npm run build && cd ..
 
-# 2) APK para el teléfono anfitrión
+# 2) APK de debug para probar en el teléfono anfitrión
 ./gradlew :app:assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 
-# 3) O probarlo con la PC como servidor
+# 3) APK de release (firmada, con R8) para repartir
+cp keystore.properties.example keystore.properties   # poné las claves reales
+./gradlew :app:assembleRelease
+# → app/build/outputs/apk/release/app-release.apk (~2,2 MB)
+
+# 4) O probarlo con la PC como servidor
 ./gradlew :server:run            # http://localhost:8080
 ```
 
 En la app: elegí jugadores y partido → **Crear mesa** → los demás escanean el QR (o abren la
-`http://<ip>:8080` que muestra la pantalla) → **Estoy listo**.
+`http://<ip>:8080` que muestra la pantalla) → **Estoy listo**. La guía completa para quien juega
+(instalación, hotspot, problemas comunes) está en [docs/06-INSTALACION.md](docs/06-INSTALACION.md).
 
 ```bash
 # Tests

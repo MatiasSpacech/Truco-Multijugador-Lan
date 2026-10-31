@@ -821,18 +821,25 @@ input:focus-visible {
 
 /* ------------------------------------------------------------------ hoja: historia, ayuda y ajustes */
 
+/* Velo + hoja.
+   La hoja va con `position: fixed; bottom: 0` (no flex-end dentro del velo): si el WebView
+   queda con un viewport viejo después de cerrar el teclado, la hoja sigue anclada abajo y
+   visible en vez de quedar fuera de pantalla. Tocar el fondo también cierra. */
 .velo {
   position: fixed;
   inset: 0;
   z-index: 20;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
   background: rgba(var(--sombra-rgb), 0.6);
   animation: aparecer 0.15s ease-out;
 }
 
 .hoja {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 21;
+  margin: 0 auto;
   width: min(520px, 100%);
   max-height: 82vh;
   display: flex;
@@ -983,8 +990,13 @@ input:focus-visible {
 /* ------------------------------------------------------------------ tutorial */
 
 .tutorial {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 12px);
+  z-index: 21;
+  margin: 0 auto;
   width: min(420px, calc(100% - 24px));
-  margin-bottom: 12px;
   align-items: center;
   text-align: center;
   background: var(--verde-2);

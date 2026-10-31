@@ -185,11 +185,29 @@ sin corromper el estado.
 **Pendiente de esta fase**: revisar los textos en inglés con un hablante nativo y probar el sonido en
 un iPhone real (Safari exige el gesto y no soporta `navigator.vibrate`).
 
-## Fase 7 — Release (2 sesiones)
-- Firma, `assembleRelease`, R8 con reglas para Ktor/kotlinx.serialization.
-- APK/AAB, README de instalación, changelog.
-- Si D-08 = Play: ficha, política de privacidad ("no se recolectan datos"), declaración de
-  `specialUse`, beta cerrada con 12 testers.
+## Fase 7 — Release ✅ (hecho)
+`./gradlew :app:assembleRelease` → **APK firmada de 2,2 MB** (R8 + `shrinkResources`), verificada en
+emulador API 37 con 4 jugadores.
+
+- **Firma**: `keystore.properties` + `truco-release.jks` fuera de git (con
+  `keystore.properties.example` documentado). Sin keystore el release sale sin firmar y el build
+  avisa con un warning.
+- **R8**: `isMinifyEnabled` + `isShrinkResources` con reglas explícitas para kotlinx.serialization
+  (los `$serializer` generados) y Ktor/CIO en `app/proguard-rules.pro`. El APK pasa de 15,3 MB
+  (debug) a 2,2 MB.
+- **Versión 1.0.0** alineada en `app/build.gradle.kts`, `TrucoServer.kt`, `ServicioServidor.kt` y los
+  `package.json`; `versionCode = 1`.
+- **Verificación end-to-end del release** (no solo "compila"): instalado en emulador, `curl
+  /api/info` por `adb forward`, notificación del servicio en primer plano, y **3 navegadores + el
+  WebView del anfitrión jugando una mano completa** (reparto, privacidad de cartas, bazas, cierre de
+  mano y reparto siguiente). Ese es el paso que detecta si R8 se llevó los serializadores.
+- **`docs/06-INSTALACION.md`** (para quien juega: instalar, permisos, QR, hotspot, problemas
+  comunes) y **`CHANGELOG.md`** 1.0.0.
+- **AAB** no se genera: la distribución es APK directa (D-08).
+
+**Pendiente de esta fase** (no bloquea la APK): probar en 2–3 teléfonos reales (batería, aislamiento
+de clientes, hotspot con gente ya conectada) y, si algún día se publica en Play, ficha + política de
+privacidad + beta cerrada.
 
 ## Estrategia de testing
 

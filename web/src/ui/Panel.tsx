@@ -39,8 +39,15 @@ export function Panel({ cliente, eventos, nombres, pestanaInicial = "historia", 
   }
 
   return (
-    <div className="velo">
-      <div className="hoja" ref={ref} role="dialog" aria-modal="true" aria-label={t("mesa_aria_panel")}>
+    <div className="velo" onClick={alCerrar}>
+      <div
+        className="hoja"
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("mesa_aria_panel")}
+        onClick={(evento) => evento.stopPropagation()}
+      >
         <header className="hoja-header">
           <div className="pestanas" role="tablist" aria-label={t("mesa_aria_panel")}>
             {PESTANAS.map((id) => (
